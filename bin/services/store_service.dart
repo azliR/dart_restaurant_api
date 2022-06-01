@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -16,6 +17,10 @@ class StoreService {
   Router get router => Router()..get('/<storeId>', _getStoreByIdHandler);
 
   Future<Response> _getStoreByIdHandler(Request request) async {
+    print(
+        '==========================================================================');
+    print(Platform.environment['TEST']);
+
     final storeId = request.params['storeId'];
 
     if (!isUUID(storeId)) {

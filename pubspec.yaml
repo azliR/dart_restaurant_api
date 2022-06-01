@@ -1,6 +1,6 @@
 name: dart_restaurant_api
 description: A server app using the shelf package and Docker.
-version: 1.0.0
+version: 0.0.1
 # homepage: https://www.example.com
 
 environment:
