@@ -7,12 +7,13 @@ class DatabaseConnection {
 
   DatabaseConnection() {
     final Map<String, String> envVars = Platform.environment;
-    final host = envVars['DB_HOST'] ?? 'localhost';
-    final port =
-        envVars['DB_PORT'] == null ? 5432 : int.parse(envVars['DB_PORT']!);
-    final database = envVars['DB_DATABASE'] ?? 'restaurant';
-    final username = envVars['DB_USERNAME'] ?? 'postgres';
-    final password = envVars['DB_PASSWORD'] ?? 'root';
+    final host = envVars['DATABASE_HOST'] ?? 'localhost';
+    final port = envVars['DATABASE_PORT'] == null
+        ? 5432
+        : int.parse(envVars['DB_PORT']!);
+    final database = envVars['DATABASE_NAME'] ?? 'restaurant';
+    final username = envVars['DATABASE_USER'] ?? 'postgres';
+    final password = envVars['DATABASE_PASSWORD'] ?? 'root';
 
     db = PostgreSQLConnection(
       host,
