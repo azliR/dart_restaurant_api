@@ -10,7 +10,7 @@ class DatabaseConnection {
     final host = envVars['DATABASE_HOST'] ?? 'localhost';
     final port = envVars['DATABASE_PORT'] == null
         ? 5432
-        : int.parse(envVars['DB_PORT']!);
+        : int.parse(envVars['DATABASE_PORT']!);
     final database = envVars['DATABASE_NAME'] ?? 'restaurant';
     final username = envVars['DATABASE_USER'] ?? 'postgres';
     final password = envVars['DATABASE_PASSWORD'] ?? 'root';
