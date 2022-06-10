@@ -4,9 +4,10 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:validators/validators.dart';
 
+import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
-import '../models/item_category.dart';
+import '../models/item/item_sub_category.dart';
 
 class ItemSubCategoryService {
   final DatabaseConnection connection;
@@ -25,7 +26,7 @@ class ItemSubCategoryService {
 
     if (page == null || page <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -35,7 +36,7 @@ class ItemSubCategoryService {
       );
     } else if (pageLimit == null || pageLimit <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -43,9 +44,9 @@ class ItemSubCategoryService {
           ).toJson(),
         ),
       );
-    } else if (!isUUID(storeId)) {
+    } else if (storeId == null || !isUUID(storeId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -67,11 +68,11 @@ class ItemSubCategoryService {
 
     final listResult = postgresResult
         .toList()
-        .map((e) => ItemCategory.fromJson(e.toColumnMap()).toJson())
+        .map((e) => ItemSubCategory.fromJson(e.toColumnMap()).toJson())
         .toList();
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(ResponseWrapper(statusCode: 200, data: listResult).toJson()),
     );
   }

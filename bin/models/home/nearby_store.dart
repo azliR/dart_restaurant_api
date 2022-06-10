@@ -53,7 +53,7 @@ class NearbyStore extends Equatable {
         postcode: json['postcode'] as String,
         latitude: (json['latitude'] as num).toDouble(),
         longitude: (json['longitude'] as num).toDouble(),
-        rating: double.tryParse((json['rating'] as String?) ?? ''),
+        rating: double.tryParse(json['rating'] as String? ?? ''),
         isActive: json['is_active'] as bool,
         distance: (json['distance'] as num).toDouble(),
         city: json['city'] as String,

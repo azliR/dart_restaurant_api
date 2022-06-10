@@ -4,11 +4,12 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:validators/validators.dart';
 
+import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
-import '../models/item.dart';
-import '../models/item_addon.dart';
-import '../models/item_addon_category.dart';
+import '../models/item/item.dart';
+import '../models/item/item_addon.dart';
+import '../models/item/item_addon_category.dart';
 
 class ItemService {
   final DatabaseConnection connection;
@@ -16,15 +17,15 @@ class ItemService {
   ItemService(this.connection);
 
   Router get router => Router()
-    ..get('/<itemId>', _getItemByIdHandler)
+    ..get('/id/<itemId>', _getItemByIdHandler)
     ..get('/store/<storeId>', _getItemByStoreIdHandler);
 
   Future<Response> _getItemByIdHandler(Request request) async {
     final itemId = request.params['itemId'];
 
-    if (!isUUID(itemId)) {
+    if (itemId == null || !isUUID(itemId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -41,7 +42,7 @@ class ItemService {
 
     if (itemsResult.isEmpty) {
       return Response.notFound(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         jsonEncode(
           ResponseWrapper(
             statusCode: 404,
@@ -51,7 +52,7 @@ class ItemService {
       );
     } else if (itemsResult.length > 1) {
       return Response.internalServerError(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 500,
@@ -72,12 +73,13 @@ class ItemService {
           .map((e) => ItemAddonCategory.fromJson(e.toColumnMap()))
           .toList(),
     );
+
     if (addonCategoriesResult.isNotEmpty) {
       final addonsResult = await connection.db.query(
         _getItemAddonsByAddonCategoryIdQuery,
         substitutionValues: {
           'addon_category_ids':
-              itemMap.addonCategories?.map((e) => e.id).toList().join(','),
+              itemMap.addonCategories?.map((e) => e.id).toList(),
         },
       );
 
@@ -95,7 +97,7 @@ class ItemService {
     }
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(ResponseWrapper(statusCode: 200, data: itemMap).toJson()),
     );
   }
@@ -109,9 +111,9 @@ class ItemService {
     final subCategoryId =
         request.requestedUri.queryParameters['sub_category_id'];
 
-    if (!isUUID(storeId)) {
+    if (storeId == null || !isUUID(storeId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -121,7 +123,7 @@ class ItemService {
       );
     } else if (page == null || page <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -131,7 +133,7 @@ class ItemService {
       );
     } else if (pageLimit == null || pageLimit <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -141,7 +143,7 @@ class ItemService {
       );
     } else if (subCategoryId != null && !isUUID(subCategoryId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -166,7 +168,7 @@ class ItemService {
         .toList();
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(ResponseWrapper(statusCode: 200, data: listResult).toJson()),
     );
   }
@@ -188,7 +190,7 @@ class ItemService {
   static const _getItemAddonsByAddonCategoryIdQuery = '''
     SELECT *
     FROM item_addons
-    WHERE addon_category_id IN (@addon_category_ids)
+    WHERE addon_category_id = ANY (@addon_category_ids::uuid[])
     ORDER BY price
     ''';
 

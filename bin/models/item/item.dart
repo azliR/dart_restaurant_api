@@ -15,8 +15,9 @@ class Item extends Equatable {
     required this.price,
     this.specialOffer,
     this.description,
+    this.rating,
     required this.isActive,
-    this.addonCategories,
+    required this.addonCategories,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class Item extends Equatable {
   final double price;
   final double? specialOffer;
   final String? description;
+  final double? rating;
   final bool isActive;
   final List<ItemAddonCategory>? addonCategories;
 
@@ -39,8 +41,9 @@ class Item extends Equatable {
         name: json['name'] as String,
         picture: json['picture'] as String?,
         price: double.parse(json['price'] as String),
-        specialOffer: double.parse(json['special_offer'] as String? ?? ''),
+        specialOffer: double.tryParse(json['special_offer'] as String? ?? ''),
         description: json['description'] as String?,
+        rating: double.tryParse(json['rating'] as String? ?? ''),
         isActive: json['is_active'] as bool,
         addonCategories: (json['addon_categories'] as List<dynamic>?)
             ?.map((e) => ItemAddonCategory.fromJson(e as Map<String, dynamic>))
@@ -57,6 +60,7 @@ class Item extends Equatable {
     double? price,
     double? specialOffer,
     String? description,
+    double? rating,
     bool? isActive,
     List<ItemAddonCategory>? addonCategories,
   }) {
@@ -70,6 +74,7 @@ class Item extends Equatable {
       price: price ?? this.price,
       specialOffer: specialOffer ?? this.specialOffer,
       description: description ?? this.description,
+      rating: rating ?? this.rating,
       isActive: isActive ?? this.isActive,
       addonCategories: addonCategories ?? this.addonCategories,
     );
@@ -85,6 +90,7 @@ class Item extends Equatable {
         'price': price,
         'special_offer': specialOffer,
         'description': description,
+        'rating': rating,
         'is_active': isActive,
         'addon_categories': addonCategories,
       }..removeWhere(
@@ -105,6 +111,7 @@ class Item extends Equatable {
       price,
       specialOffer,
       description,
+      rating,
       isActive,
       addonCategories,
     ];

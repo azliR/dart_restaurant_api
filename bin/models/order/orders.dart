@@ -1,12 +1,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
-import 'enums/enums.dart';
-import 'order_detail.dart';
+import '../enums/enums.dart';
 
 @immutable
-class Order extends Equatable {
-  const Order({
+class Orders extends Equatable {
+  const Orders({
     required this.id,
     required this.customerId,
     required this.storeId,
@@ -14,23 +13,23 @@ class Order extends Equatable {
     this.tableId,
     this.couponId,
     required this.buyer,
+    required this.storeName,
     this.storeImage,
-    this.storeBanner,
+    this.tableName,
     this.tablePrice,
-    required this.brutto,
-    required this.netto,
     this.couponCode,
     this.couponName,
     this.discount,
+    this.discountType,
     this.discountNominal,
+    required this.brutto,
+    required this.netto,
     required this.status,
     required this.orderType,
     this.scheduledAt,
     required this.pickupType,
-    this.rating,
-    this.comment,
-    this.createdAt,
-    this.orderDetails,
+    required this.createdAt,
+    required this.totalItem,
   });
 
   final String id;
@@ -40,25 +39,25 @@ class Order extends Equatable {
   final String? tableId;
   final String? couponId;
   final String buyer;
+  final String storeName;
   final String? storeImage;
-  final String? storeBanner;
+  final String? tableName;
   final double? tablePrice;
-  final double brutto;
-  final double netto;
   final String? couponCode;
   final String? couponName;
   final double? discount;
+  final DiscountType? discountType;
   final double? discountNominal;
+  final double brutto;
+  final double netto;
   final OrderStatus status;
   final OrderType orderType;
   final DateTime? scheduledAt;
   final PickupType pickupType;
-  final double? rating;
-  final String? comment;
-  final DateTime? createdAt;
-  final List<OrderDetail>? orderDetails;
+  final DateTime createdAt;
+  final int totalItem;
 
-  factory Order.fromJson(Map<String, dynamic> json) => Order(
+  factory Orders.fromJson(Map<String, dynamic> json) => Orders(
         id: json['id'] as String,
         customerId: json['customer_id'] as String,
         storeId: json['store_id'] as String,
@@ -66,31 +65,31 @@ class Order extends Equatable {
         tableId: json['table_id'] as String?,
         couponId: json['coupon_id'] as String?,
         buyer: json['buyer'] as String,
+        storeName: json['store_name'] as String,
         storeImage: json['store_image'] as String?,
-        storeBanner: json['store_banner'] as String?,
-        tablePrice: double.parse(json['table_price'] as String),
-        brutto: double.parse(json['brutto'] as String),
-        netto: double.parse(json['netto'] as String),
+        tableName: json['table_name'] as String?,
+        tablePrice: double.tryParse(json['table_price'] as String? ?? ''),
         couponCode: json['coupon_code'] as String?,
         couponName: json['coupon_name'] as String?,
-        discount: double.parse(json['discount'] as String),
-        discountNominal: double.parse(json['discount_nominal'] as String),
+        discount: double.tryParse(json['discount'] as String? ?? ''),
+        discountType: json['discount_type'] == null
+            ? null
+            : DiscountType.fromString(json['discount_type'] as String),
+        discountNominal:
+            double.tryParse(json['discount_nominal'] as String? ?? ''),
+        brutto: double.parse(json['brutto'] as String),
+        netto: double.parse(json['netto'] as String),
         status: OrderStatus.fromString(json['status'] as String),
         orderType: OrderType.fromString(json['order_type'] as String),
         scheduledAt: json['scheduled_at'] == null
             ? null
             : json['scheduled_at'] as DateTime,
         pickupType: PickupType.fromString(json['pickup_type'] as String),
-        rating: double.parse(json['rating'] as String),
-        comment: json['comment'] as String?,
-        createdAt:
-            json['created_at'] == null ? null : json['created_at'] as DateTime,
-        orderDetails: (json['order_details'] as List<dynamic>?)
-            ?.map((e) => OrderDetail.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        createdAt: json['created_at'] as DateTime,
+        totalItem: json['total_item'] as int,
       );
 
-  Order copyWith({
+  Orders copyWith({
     String? id,
     String? customerId,
     String? storeId,
@@ -98,25 +97,25 @@ class Order extends Equatable {
     String? tableId,
     String? couponId,
     String? buyer,
+    String? storeName,
     String? storeImage,
-    String? storeBanner,
+    String? tableName,
     double? tablePrice,
-    double? brutto,
-    double? netto,
     String? couponCode,
     String? couponName,
     double? discount,
+    DiscountType? discountType,
     double? discountNominal,
+    double? brutto,
+    double? netto,
     OrderStatus? status,
     OrderType? orderType,
     DateTime? scheduledAt,
     PickupType? pickupType,
-    double? rating,
-    String? comment,
     DateTime? createdAt,
-    List<OrderDetail>? orderDetails,
+    int? totalItem,
   }) {
-    return Order(
+    return Orders(
       id: id ?? this.id,
       customerId: customerId ?? this.customerId,
       storeId: storeId ?? this.storeId,
@@ -124,23 +123,23 @@ class Order extends Equatable {
       tableId: tableId ?? this.tableId,
       couponId: couponId ?? this.couponId,
       buyer: buyer ?? this.buyer,
+      storeName: storeName ?? this.storeName,
       storeImage: storeImage ?? this.storeImage,
-      storeBanner: storeBanner ?? this.storeBanner,
+      tableName: tableName ?? this.tableName,
       tablePrice: tablePrice ?? this.tablePrice,
-      brutto: brutto ?? this.brutto,
-      netto: netto ?? this.netto,
       couponCode: couponCode ?? this.couponCode,
       couponName: couponName ?? this.couponName,
       discount: discount ?? this.discount,
+      discountType: discountType ?? this.discountType,
       discountNominal: discountNominal ?? this.discountNominal,
+      brutto: brutto ?? this.brutto,
+      netto: netto ?? this.netto,
       status: status ?? this.status,
       orderType: orderType ?? this.orderType,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       pickupType: pickupType ?? this.pickupType,
-      rating: rating ?? this.rating,
-      comment: comment ?? this.comment,
       createdAt: createdAt ?? this.createdAt,
-      orderDetails: orderDetails ?? this.orderDetails,
+      totalItem: totalItem ?? this.totalItem,
     );
   }
 
@@ -152,23 +151,23 @@ class Order extends Equatable {
         'table_id': tableId,
         'coupon_id': couponId,
         'buyer': buyer,
+        'store_name': storeName,
         'store_image': storeImage,
-        'store_banner': storeBanner,
+        'table_name': tableName,
         'table_price': tablePrice,
-        'brutto': brutto,
-        'netto': netto,
         'coupon_code': couponCode,
         'coupon_name': couponName,
         'discount': discount,
+        'discount_type': discountType?.toString(),
         'discount_nominal': discountNominal,
+        'brutto': brutto,
+        'netto': netto,
         'status': status.name,
         'order_type': orderType.name,
         'scheduled_at': scheduledAt?.toIso8601String(),
         'pickup_type': pickupType.name,
-        'rating': rating,
-        'comment': comment,
-        'created_at': createdAt?.toIso8601String(),
-        'order_details': orderDetails,
+        'created_at': createdAt.toIso8601String(),
+        'total_item': totalItem,
       }..removeWhere((key, value) => key == 'order_details' && value == null);
 
   @override
@@ -181,23 +180,23 @@ class Order extends Equatable {
       tableId,
       couponId,
       buyer,
+      storeName,
       storeImage,
-      storeBanner,
+      tableName,
       tablePrice,
-      brutto,
-      netto,
       couponCode,
       couponName,
       discount,
+      discountType,
       discountNominal,
+      brutto,
+      netto,
       status,
       orderType,
       scheduledAt,
       pickupType,
-      rating,
-      comment,
       createdAt,
-      orderDetails,
+      totalItem,
     ];
   }
 }

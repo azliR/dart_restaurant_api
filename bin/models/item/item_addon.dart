@@ -7,19 +7,19 @@ class ItemAddon extends Equatable {
     required this.id,
     required this.addonCategoryId,
     required this.name,
-    required this.price,
+    this.price,
   });
 
   final String id;
   final String addonCategoryId;
   final String name;
-  final double price;
+  final double? price;
 
   factory ItemAddon.fromJson(Map<String, dynamic> json) => ItemAddon(
         id: json['id'] as String,
         addonCategoryId: json['addon_category_id'] as String,
         name: json['name'] as String,
-        price: double.parse(json['price'] as String),
+        price: double.tryParse(json['price'] as String? ?? ''),
       );
 
   Map<String, dynamic> toJson() => {

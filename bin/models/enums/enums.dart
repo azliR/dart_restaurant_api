@@ -1,4 +1,18 @@
-enum DiscountType { fixed, percentage }
+enum DiscountType {
+  fixed,
+  percentage;
+
+  factory DiscountType.fromString(String value) {
+    switch (value) {
+      case 'fixed':
+        return DiscountType.fixed;
+      case 'percentage':
+        return DiscountType.percentage;
+      default:
+        throw FormatException('Invalid discount type: $value');
+    }
+  }
+}
 
 enum OrderStatus {
   pending,
@@ -36,7 +50,7 @@ enum OrderType {
       case 'now':
         return OrderType.now;
       default:
-        throw FormatException('Unknown order type: $name');
+        throw FormatException('Invalid order type: $name');
     }
   }
 }
@@ -52,7 +66,7 @@ enum PickupType {
       case 'dine-in':
         return PickupType.dineIn;
       default:
-        throw FormatException('Unknown pickup type: $name');
+        throw FormatException('Invalid pickup type: $name');
     }
   }
 

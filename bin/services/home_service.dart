@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
-import '../models/item.dart';
-import '../models/nearby_store.dart';
+import '../models/home/nearby_store.dart';
+import '../models/home/special_offer.dart';
 
 class HomeService {
   final DatabaseConnection connection;
@@ -22,24 +23,12 @@ class HomeService {
         double.tryParse(request.requestedUri.queryParameters['lat'] ?? '');
     final longitude =
         double.tryParse(request.requestedUri.queryParameters['lng'] ?? '');
-    final page =
-        int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
     final pageLimit =
         int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
 
-    if (page == null || page <= 0) {
+    if (pageLimit == null || pageLimit <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{page} query parameter is required or invalid',
-          ).toJson(),
-        ),
-      );
-    } else if (pageLimit == null || pageLimit <= 0) {
-      return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -49,7 +38,7 @@ class HomeService {
       );
     } else if (latitude == null || longitude == null) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -64,7 +53,6 @@ class HomeService {
       substitutionValues: {
         'lat': latitude,
         'lng': longitude,
-        'page_offset': ((page - 1) * pageLimit).toString(),
         'page_limit': pageLimit.toString(),
       },
     );
@@ -74,7 +62,7 @@ class HomeService {
         .toList();
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(
         ResponseWrapper(
           statusCode: 200,
@@ -89,24 +77,12 @@ class HomeService {
         double.tryParse(request.requestedUri.queryParameters['lat'] ?? '');
     final longitude =
         double.tryParse(request.requestedUri.queryParameters['lng'] ?? '');
-    final page =
-        int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
     final pageLimit =
         int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
 
-    if (page == null || page <= 0) {
+    if (pageLimit == null || pageLimit <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{page} query parameter is required or invalid',
-          ).toJson(),
-        ),
-      );
-    } else if (pageLimit == null || pageLimit <= 0) {
-      return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -116,7 +92,7 @@ class HomeService {
       );
     } else if (latitude == null || longitude == null) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -131,13 +107,12 @@ class HomeService {
       substitutionValues: {
         'lat': latitude,
         'lng': longitude,
-        'page_offset': ((page - 1) * pageLimit).toString(),
         'page_limit': pageLimit.toString(),
       },
     );
     final listResult = postgresResult
         .toList()
-        .map((e) => Item.fromJson(e.toColumnMap()).toJson())
+        .map((e) => SpecialOffer.fromJson(e.toColumnMap()).toJson())
         .toList();
 
     return Response.ok(
@@ -147,9 +122,7 @@ class HomeService {
           data: listResult,
         ).toJson(),
       ),
-      headers: {
-        'content-type': 'application/json',
-      },
+      headers: headers,
     );
   }
 
@@ -172,11 +145,12 @@ class HomeService {
         LEFT JOIN postcodes ON nearby_stores.postcode = postcodes.postcode
     WHERE distance <= 5
     ORDER BY distance
-    LIMIT @page_limit OFFSET @page_offset
+    LIMIT @page_limit
     ''';
 
   static const _specialOffersQuery = '''
-    SELECT items.*
+    SELECT items.*,
+        nearby_stores.distance
     FROM (
             SELECT *,
                 (
@@ -193,6 +167,6 @@ class HomeService {
         AND items.store_id = nearby_stores.id
         AND items.special_offer IS NOT NULL
     ORDER BY distance
-    LIMIT @page_limit OFFSET @page_offset;
+    LIMIT @page_limit
   ''';
 }

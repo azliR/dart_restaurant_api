@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
+import 'item_addon.dart';
+
 @immutable
 class ItemCategory extends Equatable {
   const ItemCategory({
@@ -15,14 +17,16 @@ class ItemCategory extends Equatable {
   final String? languageCode;
   final String name;
   final String? translatedName;
-  final List<dynamic>? addons;
+  final List<ItemAddon>? addons;
 
   factory ItemCategory.fromJson(Map<String, dynamic> json) => ItemCategory(
         id: json['id'] as String,
         languageCode: json['language_code'] as String?,
         name: json['name'] as String,
         translatedName: json['translated_name'] as String?,
-        addons: json['addons'] as List<dynamic>,
+        addons: (json['addons'] as List<dynamic>?)
+            ?.map((e) => ItemAddon.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   ItemCategory copyWith({
@@ -30,7 +34,7 @@ class ItemCategory extends Equatable {
     String? languageCode,
     String? name,
     String? translatedName,
-    List<dynamic>? addons,
+    List<ItemAddon>? addons,
   }) {
     return ItemCategory(
       id: id ?? this.id,

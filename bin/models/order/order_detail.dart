@@ -13,6 +13,8 @@ class OrderDetail extends Equatable {
     required this.total,
     this.picture,
     this.itemDetail,
+    this.rating,
+    this.comment,
   });
 
   final String id;
@@ -24,6 +26,8 @@ class OrderDetail extends Equatable {
   final double total;
   final String? picture;
   final String? itemDetail;
+  final double? rating;
+  final String? comment;
 
   factory OrderDetail.fromJson(Map<String, dynamic> json) => OrderDetail(
         id: json['id'] as String,
@@ -35,6 +39,8 @@ class OrderDetail extends Equatable {
         total: double.parse(json['total'] as String),
         picture: json['picture'] as String?,
         itemDetail: json['item_detail'] as String?,
+        rating: double.tryParse(json['rating'] as String? ?? ''),
+        comment: json['comment'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -47,6 +53,8 @@ class OrderDetail extends Equatable {
         'total': total,
         'picture': picture,
         'item_detail': itemDetail,
+        'rating': rating,
+        'comment': comment,
       };
 
   @override
@@ -61,6 +69,8 @@ class OrderDetail extends Equatable {
       total,
       picture,
       itemDetail,
+      rating,
+      comment,
     ];
   }
 }

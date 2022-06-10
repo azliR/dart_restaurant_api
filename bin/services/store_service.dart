@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:validators/validators.dart';
 
+import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
-import '../models/store.dart';
+import '../models/store/store.dart';
 
 class StoreService {
   final DatabaseConnection connection;
@@ -17,15 +17,11 @@ class StoreService {
   Router get router => Router()..get('/<storeId>', _getStoreByIdHandler);
 
   Future<Response> _getStoreByIdHandler(Request request) async {
-    print(
-        '==========================================================================');
-    print(Platform.environment['TEST']);
-
     final storeId = request.params['storeId'];
 
     if (!isUUID(storeId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -42,7 +38,7 @@ class StoreService {
 
     if (postgresResult.isEmpty) {
       return Response.notFound(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         jsonEncode(
           ResponseWrapper(
             statusCode: 404,
@@ -52,7 +48,7 @@ class StoreService {
       );
     } else if (postgresResult.length > 1) {
       return Response.internalServerError(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 500,
@@ -63,7 +59,7 @@ class StoreService {
     }
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(
         ResponseWrapper(
           statusCode: 200,

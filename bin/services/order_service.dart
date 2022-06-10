@@ -4,10 +4,12 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:validators/validators.dart';
 
+import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
-import '../models/order.dart';
-import '../models/order_detail.dart';
+import '../models/order/order.dart';
+import '../models/order/order_detail.dart';
+import '../models/order/orders.dart';
 
 class OrderService {
   final DatabaseConnection connection;
@@ -25,9 +27,9 @@ class OrderService {
     final pageLimit =
         int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
 
-    if (!isUUID(customerId)) {
+    if (customerId == null || !isUUID(customerId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -37,7 +39,7 @@ class OrderService {
       );
     } else if (page == null || page <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -47,7 +49,7 @@ class OrderService {
       );
     } else if (pageLimit == null || pageLimit <= 0) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -68,11 +70,11 @@ class OrderService {
 
     final listResult = postgresResult
         .toList()
-        .map((e) => Order.fromJson(e.toColumnMap()).toJson())
+        .map((e) => Orders.fromJson(e.toColumnMap()).toJson())
         .toList();
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(ResponseWrapper(statusCode: 200, data: listResult).toJson()),
     );
   }
@@ -82,7 +84,7 @@ class OrderService {
 
     if (!isUUID(orderId)) {
       return Response.badRequest(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 400,
@@ -99,7 +101,7 @@ class OrderService {
 
     if (orderResult.isEmpty) {
       return Response.notFound(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         jsonEncode(
           ResponseWrapper(
             statusCode: 404,
@@ -109,7 +111,7 @@ class OrderService {
       );
     } else if (orderResult.length > 1) {
       return Response.internalServerError(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 500,
@@ -126,7 +128,7 @@ class OrderService {
 
     if (orderDetailResult.isEmpty) {
       return Response.internalServerError(
-        headers: {'content-type': 'application/json'},
+        headers: headers,
         body: jsonEncode(
           ResponseWrapper(
             statusCode: 500,
@@ -145,15 +147,18 @@ class OrderService {
         .toJson();
 
     return Response.ok(
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       jsonEncode(ResponseWrapper(statusCode: 200, data: orderMap).toJson()),
     );
   }
 
   static const _getOrderByCustomerIdQuery = '''
-    SELECT *
+    SELECT orders.*,
+        COUNT(order_details) AS total_item
     FROM orders
+        LEFT JOIN order_details ON orders.id = order_details.order_id
     WHERE customer_id = @customer_id
+    GROUP BY orders.id
     ORDER BY created_at DESC
     LIMIT @page_limit OFFSET @page_offset
     ''';
