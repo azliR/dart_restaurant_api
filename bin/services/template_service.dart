@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' hide log;
 
+import 'package:faker/faker.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:validators/validators.dart';
 
 import '../common/constants.dart';
 import '../common/response_wrapper.dart';
@@ -14,153 +15,16 @@ import '../models/auth/customer.dart';
 import '../models/enums/enums.dart';
 import '../models/item/item.dart';
 import '../models/item/item_addon.dart';
-import '../models/order/order.dart';
 import '../models/order/order_detail.dart';
 import '../models/order/order_detail_addon.dart';
-import '../models/order/orders.dart';
 import '../models/store/store.dart';
 
-class OrderService {
+class TemplateService {
   final DatabaseConnection connection;
 
-  OrderService(this.connection);
+  TemplateService(this.connection);
 
-  Router get router => Router()
-    ..get('/', _getOrderByCustomerIdHandler)
-    ..get('/<orderId>', _getOrderByIdHandler)
-    ..post('/', _placeOrderHandler);
-
-  Future<Response> _getOrderByCustomerIdHandler(Request request) async {
-    final customerId = request.requestedUri.queryParameters['customer_id'];
-    final page =
-        int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
-    final pageLimit =
-        int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
-
-    if (customerId == null || !isUUID(customerId)) {
-      return Response.badRequest(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{customer_id} query parameter is required or invalid',
-          ).toJson(),
-        ),
-      );
-    } else if (page == null || page <= 0) {
-      return Response.badRequest(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{page} query parameter is required or invalid',
-          ).toJson(),
-        ),
-      );
-    } else if (pageLimit == null || pageLimit <= 0) {
-      return Response.badRequest(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{page_limit} query parameter is required or invalid',
-          ).toJson(),
-        ),
-      );
-    }
-
-    final postgresResult = await connection.db.query(
-      _getOrderByCustomerIdQuery,
-      substitutionValues: {
-        'customer_id': customerId,
-        'page_offset': (page - 1) * pageLimit,
-        'page_limit': pageLimit,
-      },
-    );
-
-    final listResult = postgresResult
-        .toList()
-        .map((e) => Orders.fromJson(e.toColumnMap()).toJson())
-        .toList();
-
-    return Response.ok(
-      headers: headers,
-      jsonEncode(ResponseWrapper(statusCode: 200, data: listResult).toJson()),
-    );
-  }
-
-  Future<Response> _getOrderByIdHandler(Request request) async {
-    final orderId = request.params['orderId'];
-
-    if (!isUUID(orderId)) {
-      return Response.badRequest(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{order_id} path parameter is invalid',
-          ).toJson(),
-        ),
-      );
-    }
-
-    final orderResult = await connection.db.query(
-      _getOrderByIdQuery,
-      substitutionValues: {'id': orderId},
-    );
-
-    if (orderResult.isEmpty) {
-      return Response.notFound(
-        headers: headers,
-        jsonEncode(
-          ResponseWrapper(
-            statusCode: 404,
-            message: 'Order not found',
-          ).toJson(),
-        ),
-      );
-    } else if (orderResult.length > 1) {
-      return Response.internalServerError(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 500,
-            message: 'Multiple orders found',
-          ).toJson(),
-        ),
-      );
-    }
-
-    final orderDetailResult = await connection.db.query(
-      _getOrderDetailByOrderIdQuery,
-      substitutionValues: {'order_id': orderId},
-    );
-
-    if (orderDetailResult.isEmpty) {
-      return Response.internalServerError(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 500,
-            message: 'Order detail not found',
-          ).toJson(),
-        ),
-      );
-    }
-
-    final orderMap = Order.fromJson(orderResult.first.toColumnMap())
-        .copyWith(
-          orderDetails: orderDetailResult
-              .map((e) => OrderDetail.fromJson(e.toColumnMap()))
-              .toList(),
-        )
-        .toJson();
-
-    return Response.ok(
-      headers: headers,
-      jsonEncode(ResponseWrapper(statusCode: 200, data: orderMap).toJson()),
-    );
-  }
+  Router get router => Router()..post('/order', _createOrderTemplateHandler);
 
   Future<Response> _placeOrderHandler(Request request) async {
     try {
@@ -173,6 +37,7 @@ class OrderService {
       final orderType = body['order_type'] as String?;
       final pickupType = body['pickup_type'] as String?;
       final scheduleAt = body['schedule_at'] as int?;
+      final createdAt = body['created_at'] as String?;
       final itemMaps =
           (body['items'] as List<dynamic>?)?.cast<Map<String, dynamic>>();
 
@@ -376,6 +241,7 @@ class OrderService {
             'order_type': orderType,
             'scheduled_at': scheduleAt,
             'pickup_type': pickupType,
+            'created_at': createdAt,
           },
         );
 
@@ -389,6 +255,12 @@ class OrderService {
             substitutionValues: orderDetail
                 .copyWith(
                   orderId: orderResult.first.toColumnMap()['id'] as String,
+                  comment: faker.randomGenerator.boolean()
+                      ? faker.lorem.sentence()
+                      : null,
+                  rating: faker.randomGenerator.boolean()
+                      ? Random().nextInt(4) + 1
+                      : null,
                 )
                 .toJson(),
           );
@@ -465,28 +337,82 @@ class OrderService {
     }
   }
 
-  static const _getOrderByCustomerIdQuery = '''
-    SELECT orders.*,
-        COUNT(order_details) AS total_item
-    FROM orders
-        LEFT JOIN order_details ON orders.id = order_details.order_id
-    WHERE customer_id = @customer_id
-    GROUP BY orders.id
-    ORDER BY created_at DESC
-    LIMIT @page_limit OFFSET @page_offset
-    ''';
-
-  static const _getOrderByIdQuery = '''
-    SELECT *
-    FROM orders
-    WHERE id = @id
-    ''';
-
-  static const _getOrderDetailByOrderIdQuery = '''
-    SELECT *
-    FROM order_details
-    WHERE order_id = @order_id
-    ''';
+  Future<Response> _createOrderTemplateHandler(Request request) async {
+    try {
+      for (var i = 0; i < 10; i++) {
+        final isSchedule = faker.randomGenerator.boolean();
+        final a = await _placeOrderHandler(
+          Request(
+            request.method,
+            request.requestedUri,
+            headers: request.headers,
+            context: request.context,
+            encoding: request.encoding,
+            handlerPath: request.handlerPath,
+            onHijack: request.hijack,
+            protocolVersion: request.protocolVersion,
+            url: request.url,
+            body: jsonEncode({
+              'store_id': '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+              'order_type':
+                  isSchedule ? OrderType.scheduled.name : OrderType.now.name,
+              'coupon': '',
+              'schedule_at': isSchedule ? Random().nextInt(120) : null,
+              'pickup_type': PickupType
+                  .values[Random().nextInt(PickupType.values.length)].name,
+              'created_at': Faker()
+                  .date
+                  .dateTime(minYear: 2021, maxYear: 2022)
+                  .toIso8601String(),
+              'items': Set.from(
+                Iterable.generate(
+                  Random().nextInt(10) + 1,
+                  (index) => {
+                    'item_id': [
+                      '7b1c8c31-4a0f-4457-8c71-8f06631aa9ae',
+                      'c171b7c0-9457-49af-8872-b0ff5081bbc1',
+                      'e42dd265-873e-44d9-abaa-5f937c9d4d6e',
+                      '0098d69a-1d47-4f1b-a423-58e157388744',
+                      '2cf7dd2d-59c0-4b5d-a61c-7177b1120247',
+                      '427643c1-9b79-4016-a806-cdef76a79ab7',
+                      'c9113655-b1dc-4415-8ad1-34540db0df92',
+                      '3ceeecb7-5061-480a-8dcc-036b54a860cb',
+                      'c61f2371-f967-4eda-bf39-c7e2875ef3aa',
+                      '1e6bc1ae-8772-43ae-823e-7c0c9c199658',
+                      '1dc4e414-1c77-4dfe-834c-ab6794169a5d',
+                      '82c8dbdb-9e10-4724-ac7f-55574ceceb74',
+                      'c7f2bc71-3bfa-4315-83ef-ddc1f75a3225',
+                    ][Random().nextInt(13)],
+                    'quantity': Random().nextInt(10) + 1,
+                  },
+                ),
+              ).toList()
+            }),
+          ),
+        );
+        print(await a.readAsString());
+      }
+      return Response.ok(
+        jsonEncode(
+          ResponseWrapper(
+            statusCode: 200,
+            message: 'Order template successfully created',
+          ).toJson(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: 500,
+            message: e.toString(),
+          ).toJson(),
+        ),
+      );
+    }
+  }
 
   static const _insertOrderQuery = '''
     INSERT INTO orders (
@@ -511,7 +437,8 @@ class OrderService {
         status,
         order_type,
         scheduled_at,
-        pickup_type
+        pickup_type,
+        created_at
     ) VALUES (
         @customer_id,
         @store_id,
@@ -534,7 +461,8 @@ class OrderService {
         @status,
         @order_type,
         NOW() + INTERVAL '1 MINUTES' * @scheduled_at,
-        @pickup_type
+        @pickup_type,
+        @created_at
     )
     RETURNING id
     ''';

@@ -170,7 +170,31 @@ GROUP BY orders.id
 ORDER BY created_at DESC
 LIMIT 10 OFFSET 0;
 
+-- Customer
+--
+-- Get Customer by Id
+SELECT *
+FROM items
+WHERE id = ALL(
+        '{7b1c8c31-4a0f-4457-8c71-8f06631aa9ae}'
+    );
+
 -- Create Order
+WITH customer AS (
+    SELECT full_name
+    FROM customers
+    WHERE id = '1c7b3156-986b-487b-8d6c-2db03806ca30'
+),
+coupon AS (
+    SELECT id
+    FROM coupons
+    WHERE coupon_code = 'BREAK'
+),
+reservation_table AS (
+    SELECT id
+    FROM reservation_tables
+    WHERE id = '947898b3-be6c-4a70-86b8-2286154af42b'
+)
 INSERT INTO public.orders (
         id,
         customer_id,
@@ -198,14 +222,13 @@ INSERT INTO public.orders (
         created_at
     )
 VALUES(
-        'd0dc6416-d1cb-4e4c-b5d0-3af7b176fb4c'::uuid,
         '1c7b3156-986b-487b-8d6c-2db03806ca30'::uuid,
         '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
         'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
         '947898b3-be6c-4a70-86b8-2286154af42b'::uuid,
-        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6'::uuid,
-        'Rizal Hadiyansah',
-        'Alpha Store',
+        coupon.id,
+        customer.full_name,
+        store.name,
         'https://www.koalahero.com/wp-content/uploads/2019/10/Makanan-McDonald.jpg',
         'Table 1',
         10000.00,

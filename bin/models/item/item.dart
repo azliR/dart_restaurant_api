@@ -6,45 +6,45 @@ import 'item_addon_category.dart';
 @immutable
 class Item extends Equatable {
   const Item({
-    required this.id,
-    required this.storeId,
-    required this.categoryId,
+    this.id,
+    this.storeId,
+    this.categoryId,
     this.subCategoryId,
-    required this.name,
+    this.name,
     this.picture,
-    required this.price,
+    this.price,
     this.specialOffer,
     this.description,
     this.rating,
-    required this.isActive,
-    required this.addonCategories,
+    this.isActive,
+    this.addonCategories,
   });
 
-  final String id;
-  final String storeId;
-  final String categoryId;
+  final String? id;
+  final String? storeId;
+  final String? categoryId;
   final String? subCategoryId;
-  final String name;
+  final String? name;
   final String? picture;
-  final double price;
+  final double? price;
   final double? specialOffer;
   final String? description;
   final double? rating;
-  final bool isActive;
+  final bool? isActive;
   final List<ItemAddonCategory>? addonCategories;
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
-        id: json['id'] as String,
-        storeId: json['store_id'] as String,
-        categoryId: json['category_id'] as String,
+        id: json['id'] as String?,
+        storeId: json['store_id'] as String?,
+        categoryId: json['category_id'] as String?,
         subCategoryId: json['sub_category_id'] as String?,
-        name: json['name'] as String,
+        name: json['name'] as String?,
         picture: json['picture'] as String?,
-        price: double.parse(json['price'] as String),
+        price: double.tryParse(json['price'] as String? ?? ''),
         specialOffer: double.tryParse(json['special_offer'] as String? ?? ''),
         description: json['description'] as String?,
         rating: double.tryParse(json['rating'] as String? ?? ''),
-        isActive: json['is_active'] as bool,
+        isActive: json['is_active'] as bool?,
         addonCategories: (json['addon_categories'] as List<dynamic>?)
             ?.map((e) => ItemAddonCategory.fromJson(e as Map<String, dynamic>))
             .toList(),

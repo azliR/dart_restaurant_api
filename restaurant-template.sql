@@ -78,7 +78,7 @@ CREATE TABLE item_addons (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
     addon_category_id UUID NOT NULL,
     name VARCHAR(64) NOT NULL,
-    price DECIMAL(11, 2) NOT NULL,
+    price DECIMAL(11, 2),
     CONSTRAINT pk_item_addons PRIMARY KEY (id)
 );
 
@@ -155,7 +155,7 @@ CREATE TABLE order_details (
     price DECIMAL(11, 2) NOT NULL,
     total DECIMAL(11, 2) NOT NULL,
     picture TEXT,
-    item_detail VARCHAR(255),
+    item_detail TEXT,
     rating DECIMAL(2, 1),
     comment VARCHAR(255),
     CONSTRAINT pk_order_details PRIMARY KEY (id)
@@ -166,7 +166,7 @@ CREATE TABLE order_detail_addons (
     order_detail_id UUID NOT NULL,
     addon_id UUID NOT NULL,
     addon_name VARCHAR(64) NOT NULL,
-    price DECIMAL(11, 2) NOT NULL,
+    addon_price DECIMAL(11, 2) NOT NULL,
     CONSTRAINT pk_order_detail_addons PRIMARY KEY (id)
 );
 
@@ -1298,7 +1298,13 @@ VALUES(
     );
 
 -- insert order_detail_addons
-INSERT INTO public.order_detail_addons (id, order_detail_id, addon_id, addon_name, price)
+INSERT INTO public.order_detail_addons (
+        id,
+        order_detail_id,
+        addon_id,
+        addon_name,
+        addon_price
+    )
 VALUES(
         '92120f69-a875-4389-a835-33e46c36a3e0'::uuid,
         '2cb56b76-c756-4b57-ac66-1f346e4bc065'::uuid,

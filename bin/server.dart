@@ -5,12 +5,14 @@ import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'db/connection.dart';
+import 'services/customer_service.dart';
 import 'services/home_service.dart';
 import 'services/item_category_service.dart';
 import 'services/item_service.dart';
 import 'services/item_sub_category_service.dart';
 import 'services/order_service.dart';
 import 'services/store_service.dart';
+import 'services/template_service.dart';
 
 void main(List<String> args) async {
   final connection = DatabaseConnection();
@@ -21,7 +23,9 @@ void main(List<String> args) async {
   final itemCategory = ItemCategoryService(connection);
   final itemSubCategory = ItemSubCategoryService(connection);
   final storeService = StoreService(connection);
+  final customerService = CustomerService(connection);
   final orderService = OrderService(connection);
+  final templateService = TemplateService(connection);
 
   final router = Router()
     ..mount('/api/v1/home', homeService.router)
@@ -29,7 +33,9 @@ void main(List<String> args) async {
     ..mount('/api/v1/item/category', itemCategory.router)
     ..mount('/api/v1/item/sub_category', itemSubCategory.router)
     ..mount('/api/v1/store', storeService.router)
-    ..mount('/api/v1/user/order', orderService.router);
+    ..mount('/api/v1/user/customer', customerService.router)
+    ..mount('/api/v1/user/order', orderService.router)
+    ..mount('/api/v1/user/template', templateService.router);
 
   // Use any available host or container IP (usually `0.0.0.0`).
   final ip = InternetAddress.anyIPv4;

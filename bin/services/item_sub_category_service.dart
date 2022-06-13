@@ -57,7 +57,7 @@ class ItemSubCategoryService {
     }
 
     final postgresResult = await connection.db.query(
-      _getItemSubCategoryServiceQuery,
+      kSelectItemSubCategoryServiceQuery,
       substitutionValues: {
         'store_id': storeId,
         'language_code': languageCode,
@@ -77,7 +77,7 @@ class ItemSubCategoryService {
     );
   }
 
-  static const _getItemSubCategoryServiceQuery = '''
+  static const kSelectItemSubCategoryServiceQuery = '''
     SELECT item_sub_categories.id,
         item_sub_category_l10ns.language_code,
         item_sub_categories.name,

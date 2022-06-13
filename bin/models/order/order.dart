@@ -7,13 +7,13 @@ import 'order_detail.dart';
 @immutable
 class Order extends Equatable {
   const Order({
-    required this.id,
-    required this.customerId,
-    required this.storeId,
+    this.id,
+    this.customerId,
+    this.storeId,
     this.storeAccountId,
     this.tableId,
     this.couponId,
-    required this.buyer,
+    this.buyer,
     this.storeName,
     this.storeImage,
     this.tableName,
@@ -23,23 +23,23 @@ class Order extends Equatable {
     this.discount,
     this.discountType,
     this.discountNominal,
-    required this.brutto,
-    required this.netto,
-    required this.status,
-    required this.orderType,
+    this.brutto,
+    this.netto,
+    this.status,
+    this.orderType,
     this.scheduledAt,
-    required this.pickupType,
-    required this.createdAt,
-    required this.orderDetails,
+    this.pickupType,
+    this.createdAt,
+    this.orderDetails,
   });
 
-  final String id;
-  final String customerId;
-  final String storeId;
+  final String? id;
+  final String? customerId;
+  final String? storeId;
   final String? storeAccountId;
   final String? tableId;
   final String? couponId;
-  final String buyer;
+  final String? buyer;
   final String? storeName;
   final String? storeImage;
   final String? tableName;
@@ -49,23 +49,23 @@ class Order extends Equatable {
   final double? discount;
   final DiscountType? discountType;
   final double? discountNominal;
-  final double brutto;
-  final double netto;
-  final OrderStatus status;
-  final OrderType orderType;
+  final double? brutto;
+  final double? netto;
+  final OrderStatus? status;
+  final OrderType? orderType;
   final DateTime? scheduledAt;
-  final PickupType pickupType;
-  final DateTime createdAt;
-  final List<OrderDetail> orderDetails;
+  final PickupType? pickupType;
+  final DateTime? createdAt;
+  final List<OrderDetail>? orderDetails;
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
-        id: json['id'] as String,
-        customerId: json['customer_id'] as String,
-        storeId: json['store_id'] as String,
+        id: json['id'] as String?,
+        customerId: json['customer_id'] as String?,
+        storeId: json['store_id'] as String?,
         storeAccountId: json['store_account_id'] as String?,
         tableId: json['table_id'] as String?,
         couponId: json['coupon_id'] as String?,
-        buyer: json['buyer'] as String,
+        buyer: json['buyer'] as String?,
         storeName: json['store_name'] as String?,
         storeImage: json['store_image'] as String?,
         tableName: json['table_name'] as String?,
@@ -78,17 +78,25 @@ class Order extends Equatable {
             : DiscountType.fromString(json['discount_type'] as String),
         discountNominal:
             double.tryParse(json['discount_nominal'] as String? ?? ''),
-        brutto: double.parse(json['brutto'] as String),
-        netto: double.parse(json['netto'] as String),
-        status: OrderStatus.fromString(json['status'] as String),
-        orderType: OrderType.fromString(json['order_type'] as String),
+        brutto: double.tryParse(json['brutto'] as String? ?? ''),
+        netto: double.tryParse(json['netto'] as String? ?? ''),
+        status: json['status'] == null
+            ? null
+            : OrderStatus.fromString(json['status'] as String),
+        orderType: json['order_type'] == null
+            ? null
+            : OrderType.fromString(json['order_type'] as String),
         scheduledAt: json['scheduled_at'] == null
             ? null
             : json['scheduled_at'] as DateTime,
-        pickupType: PickupType.fromString(json['pickup_type'] as String),
-        createdAt: json['created_at'] as DateTime,
-        orderDetails: (json['order_details'] as List<dynamic>)
-            .map((e) => OrderDetail.fromJson(e as Map<String, dynamic>))
+        pickupType: json['pickup_type'] == null
+            ? null
+            : PickupType.fromString(json['pickup_type'] as String),
+        createdAt: json['created_at'] == null
+            ? null
+            : DateTime.parse(json['created_at'] as String),
+        orderDetails: (json['order_details'] as List<dynamic>?)
+            ?.map((e) => OrderDetail.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
@@ -165,11 +173,11 @@ class Order extends Equatable {
         'discount_nominal': discountNominal,
         'brutto': brutto,
         'netto': netto,
-        'status': status.name,
-        'order_type': orderType.name,
+        'status': status?.name,
+        'order_type': orderType?.name,
         'scheduled_at': scheduledAt?.toIso8601String(),
-        'pickup_type': pickupType.name,
-        'created_at': createdAt.toIso8601String(),
+        'pickup_type': pickupType?.name,
+        'created_at': createdAt?.toIso8601String(),
         'order_details': orderDetails,
       }..removeWhere((key, value) => key == 'order_details' && value == null);
 

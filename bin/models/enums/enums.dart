@@ -2,7 +2,7 @@ enum DiscountType {
   fixed,
   percentage;
 
-  factory DiscountType.fromString(String value) {
+  factory DiscountType.fromString(String? value) {
     switch (value) {
       case 'fixed':
         return DiscountType.fixed;
@@ -21,7 +21,7 @@ enum OrderStatus {
   complete,
   cancelled;
 
-  factory OrderStatus.fromString(String value) {
+  factory OrderStatus.fromString(String? value) {
     switch (value) {
       case 'pending':
         return OrderStatus.pending;
@@ -43,7 +43,7 @@ enum OrderType {
   scheduled,
   now;
 
-  factory OrderType.fromString(String name) {
+  factory OrderType.fromString(String? name) {
     switch (name) {
       case 'scheduled':
         return OrderType.scheduled;
@@ -59,7 +59,7 @@ enum PickupType {
   pickup,
   dineIn;
 
-  factory PickupType.fromString(String name) {
+  factory PickupType.fromString(String? name) {
     switch (name) {
       case 'pickup':
         return PickupType.pickup;
@@ -84,7 +84,7 @@ enum StoreRole {
   admin,
   staff;
 
-  factory StoreRole.fromString(String value) {
+  factory StoreRole.fromString(String? value) {
     switch (value) {
       case 'admin':
         return StoreRole.admin;
