@@ -40,8 +40,8 @@ enum OrderStatus {
 }
 
 enum OrderType {
-  scheduled,
-  now;
+  now,
+  scheduled;
 
   factory OrderType.fromString(String? name) {
     switch (name) {

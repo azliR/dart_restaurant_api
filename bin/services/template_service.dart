@@ -20,9 +20,9 @@ import '../models/order/order_detail_addon.dart';
 import '../models/store/store.dart';
 
 class TemplateService {
-  final DatabaseConnection connection;
+  final DatabaseConnection _connection;
 
-  TemplateService(this.connection);
+  TemplateService(this._connection);
 
   Router get router => Router()..post('/order', _createOrderTemplateHandler);
 
@@ -46,7 +46,7 @@ class TemplateService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{store_id} is required',
             ).toJson(),
           ),
@@ -56,7 +56,7 @@ class TemplateService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{order_type} is required',
             ).toJson(),
           ),
@@ -66,7 +66,7 @@ class TemplateService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{pickup_type} is required',
             ).toJson(),
           ),
@@ -76,7 +76,7 @@ class TemplateService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{schedule_at} should be between 0 and 120',
             ).toJson(),
           ),
@@ -87,7 +87,7 @@ class TemplateService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{items} is required',
             ).toJson(),
           ),
@@ -102,7 +102,7 @@ class TemplateService {
               headers: headers,
               body: jsonEncode(
                 ResponseWrapper(
-                  statusCode: 400,
+                  statusCode: HttpStatus.badRequest,
                   message: '{item_id} is required',
                 ).toJson(),
               ),
@@ -112,7 +112,7 @@ class TemplateService {
               headers: headers,
               body: jsonEncode(
                 ResponseWrapper(
-                  statusCode: 400,
+                  statusCode: HttpStatus.badRequest,
                   message: '{quantity} is required',
                 ).toJson(),
               ),
@@ -121,7 +121,7 @@ class TemplateService {
         }
       }
 
-      final transaction = await connection.db.transaction((connection) async {
+      final transaction = await _connection.db.transaction((connection) async {
         final customerResult = await connection.query(
           'SELECT id, full_name FROM customers WHERE id = @customer_id',
           substitutionValues: {'customer_id': authToken},
@@ -134,7 +134,7 @@ class TemplateService {
         }
 
         final storeResult = await connection.query(
-          'SELECT id, name FROM stores WHERE id = @store_id',
+          'SELECT id, name, image FROM stores WHERE id = @store_id',
           substitutionValues: {'store_id': storeId},
         );
         late final Store store;
@@ -237,7 +237,7 @@ class TemplateService {
             // minus by coupon
             'brutto': orderTotal,
             'netto': orderTotal,
-            'status': OrderStatus.pending.name,
+            'status': OrderStatus.complete.name,
             'order_type': orderType,
             'scheduled_at': scheduleAt,
             'pickup_type': pickupType,
@@ -296,7 +296,7 @@ class TemplateService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 500,
+              statusCode: HttpStatus.internalServerError,
               message: transaction.reason,
             ).toJson(),
           ),
@@ -306,7 +306,7 @@ class TemplateService {
           headers: headers,
           jsonEncode(
             ResponseWrapper(
-              statusCode: 200,
+              statusCode: HttpStatus.ok,
               message: 'Order successfully created',
             ).toJson(),
           ),
@@ -318,18 +318,18 @@ class TemplateService {
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 500,
+            statusCode: HttpStatus.internalServerError,
             message: e.message,
           ).toJson(),
         ),
       );
     } catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);
-      return Response.badRequest(
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
+            statusCode: HttpStatus.internalServerError,
             message: e.toString(),
           ).toJson(),
         ),
@@ -339,7 +339,7 @@ class TemplateService {
 
   Future<Response> _createOrderTemplateHandler(Request request) async {
     try {
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < 1000; i++) {
         final isSchedule = faker.randomGenerator.boolean();
         final a = await _placeOrderHandler(
           Request(
@@ -390,13 +390,23 @@ class TemplateService {
             }),
           ),
         );
-        print(await a.readAsString());
       }
       return Response.ok(
         jsonEncode(
           ResponseWrapper(
-            statusCode: 200,
+            statusCode: HttpStatus.ok,
             message: 'Order template successfully created',
+          ).toJson(),
+        ),
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
           ).toJson(),
         ),
       );
@@ -406,7 +416,7 @@ class TemplateService {
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 500,
+            statusCode: HttpStatus.internalServerError,
             message: e.toString(),
           ).toJson(),
         ),

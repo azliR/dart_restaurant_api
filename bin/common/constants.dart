@@ -6,3 +6,7 @@ const headers = {
   HttpHeaders.accessControlRequestMethodHeader: 'http://localhost:4000',
   HttpHeaders.contentTypeHeader: 'application/json',
 };
+const kSupportedLanguages = {
+  'en',
+  'id',
+};

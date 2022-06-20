@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
+import 'order_detail_addon.dart';
+
 @immutable
 class OrderDetail extends Equatable {
   const OrderDetail({
@@ -15,6 +17,7 @@ class OrderDetail extends Equatable {
     this.itemDetail,
     this.rating,
     this.comment,
+    this.addons,
   });
 
   final String? id;
@@ -28,6 +31,7 @@ class OrderDetail extends Equatable {
   final String? itemDetail;
   final double? rating;
   final String? comment;
+  final List<OrderDetailAddon>? addons;
 
   factory OrderDetail.fromJson(Map<String, dynamic> json) => OrderDetail(
         id: json['id'] as String?,
@@ -41,6 +45,9 @@ class OrderDetail extends Equatable {
         itemDetail: json['item_detail'] as String?,
         rating: double.tryParse(json['rating'] as String? ?? ''),
         comment: json['comment'] as String?,
+        addons: (json['addons'] as List<dynamic>?)
+            ?.map((e) => OrderDetailAddon.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   OrderDetail copyWith({
@@ -55,6 +62,7 @@ class OrderDetail extends Equatable {
     String? itemDetail,
     double? rating,
     String? comment,
+    List<OrderDetailAddon>? addons,
   }) {
     return OrderDetail(
       id: id ?? this.id,
@@ -68,6 +76,7 @@ class OrderDetail extends Equatable {
       itemDetail: itemDetail ?? this.itemDetail,
       rating: rating ?? this.rating,
       comment: comment ?? this.comment,
+      addons: addons ?? this.addons,
     );
   }
 
@@ -83,6 +92,7 @@ class OrderDetail extends Equatable {
         'item_detail': itemDetail,
         'rating': rating,
         'comment': comment,
+        'addons': addons,
       };
 
   @override
@@ -99,6 +109,7 @@ class OrderDetail extends Equatable {
       itemDetail,
       rating,
       comment,
+      addons,
     ];
   }
 }

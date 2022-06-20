@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
 
+import 'package:firebase_dart/auth.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:validators/validators.dart';
 
 import '../common/constants.dart';
 import '../common/response_wrapper.dart';
@@ -10,16 +14,30 @@ import '../db/connection.dart';
 import '../models/auth/customer.dart';
 
 class CustomerService {
-  final DatabaseConnection connection;
+  final DatabaseConnection _connection;
+  final FirebaseAuth _firebaseAuth;
 
-  CustomerService(this.connection);
+  CustomerService(this._connection, this._firebaseAuth);
 
-  Router get router => Router()..get('/<customerId>', _getCustomerByIdHandler);
+  Router get router => Router()
+    ..get('/profile', _getCustomerByIdHandler)
+    ..put('/profile', _updateCustomerHandler)
+    ..post('/auth', _loginCustomerHandler);
 
   Future<Response> _getCustomerByIdHandler(Request request) async {
     try {
-      final customerId = request.requestedUri.pathSegments.last;
-      final postgresResult = await connection.db.query(
+      final customerId = request.headers[HttpHeaders.authorizationHeader]
+          ?.replaceAll('Bearer ', '');
+      if (customerId == null) {
+        return Response.notFound(
+          headers: headers,
+          ResponseWrapper(
+            message: 'Unauthorized',
+            statusCode: HttpStatus.unauthorized,
+          ),
+        );
+      }
+      final postgresResult = await _connection.db.query(
         _getCustomerByIdQuery,
         substitutionValues: {
           'customer_id': customerId,
@@ -30,48 +48,340 @@ class CustomerService {
           headers: headers,
           jsonEncode(
             ResponseWrapper(
-              statusCode: 404,
+              statusCode: HttpStatus.notFound,
               message: 'Customer not found',
             ).toJson(),
           ),
         );
-      } else if (postgresResult.length > 1) {
-        return Response.internalServerError(
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: 500,
-              message: 'Multiple customers found',
-            ).toJson(),
-          ),
-        );
       }
+
       final customer = postgresResult.first;
       return Response.ok(
         jsonEncode(
           ResponseWrapper(
-            statusCode: 200,
+            statusCode: HttpStatus.ok,
             data: Customer.fromJson(customer.toColumnMap()),
           ).toJson(),
         ),
         headers: headers,
       );
-    } on PostgreSQLException catch (e) {
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
       return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 500,
+            statusCode: HttpStatus.internalServerError,
             message: e.message,
           ).toJson(),
         ),
       );
-    } catch (e) {
-      return Response.badRequest(
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
+          ).toJson(),
+        ),
+      );
+    }
+  }
+
+  Future<Response> _updateCustomerHandler(Request request) async {
+    try {
+      final customerId = request.headers[HttpHeaders.authorizationHeader]
+          ?.replaceAll('Bearer ', '');
+      final body =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final name = body['full_name'] as String?;
+      final languageCode = body['language'] as String?;
+
+      if (customerId == null || !isUUID(customerId)) {
+        return Response.notFound(
+          headers: headers,
+          jsonEncode(
+            ResponseWrapper(
+              message: 'Unauthorized',
+              statusCode: HttpStatus.unauthorized,
+            ).toJson(),
+          ),
+        );
+      } else if (name == null || name.isEmpty) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{full_name} is required',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      } else if (languageCode == null || languageCode.isEmpty) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{language} is required',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      } else if (!kSupportedLanguages.contains(languageCode)) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{language} is not supported',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      }
+      final postgresResult = await _connection.db.query(
+        _updateCustomerQuery,
+        substitutionValues: {
+          'customer_id': customerId,
+          'full_name': name,
+          'language_code': languageCode,
+        },
+      );
+      if (postgresResult.isEmpty) {
+        return Response.notFound(
+          headers: headers,
+          jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.notFound,
+              message: 'Customer not found',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final customer = postgresResult.first;
+      return Response.ok(
+        jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.ok,
+            data: Customer.fromJson(customer.toColumnMap()),
+          ).toJson(),
+        ),
+        headers: headers,
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
+          ).toJson(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
+          ).toJson(),
+        ),
+      );
+    }
+  }
+
+  Future<Response> _createCustomerHandler(Request request) async {
+    try {
+      final body =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final token = request.headers[HttpHeaders.authorizationHeader];
+      final name = body['full_name'] as String?;
+      final phone = body['phone'] as String?;
+      final languageCode = body['language'] as String?;
+
+      if (token == null) {
+        return Response(
+          HttpStatus.unauthorized,
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: 'Unauthorized',
+              statusCode: HttpStatus.unauthorized,
+            ).toJson(),
+          ),
+        );
+      } else if (name == null || name.isEmpty) {}
+      if (name == null || name.isEmpty) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{full_name} is required',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      } else if (phone == null || phone.isEmpty) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{phone} is required',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      } else if (languageCode == null || languageCode.isEmpty) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{language} is required',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      } else if (!kSupportedLanguages.contains(languageCode)) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: '{language} is not supported',
+              statusCode: HttpStatus.badRequest,
+            ).toJson(),
+          ),
+        );
+      }
+      final postgresResult = await _connection.db.query(
+        _createCustomerQuery,
+        substitutionValues: {
+          'full_name': name,
+          'phone': phone,
+          'language_code': languageCode,
+        },
+      );
+      if (postgresResult.isEmpty) {
+        return Response.internalServerError(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.internalServerError,
+              message: 'Customer not created',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final customer = postgresResult.first;
+      return Response.ok(
+        jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.ok,
+            data: Customer.fromJson(customer.toColumnMap()),
+          ).toJson(),
+        ),
+        headers: headers,
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
+          ).toJson(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
+          ).toJson(),
+        ),
+      );
+    }
+  }
+
+  Future<Response> _loginCustomerHandler(Request request) async {
+    try {
+      final body =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final token = body['token'] as String?;
+
+      if (token == null) {
+        return Response(
+          HttpStatus.unauthorized,
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              message: 'Unauthorized',
+              statusCode: HttpStatus.unauthorized,
+            ).toJson(),
+          ),
+        );
+      }
+
+      final userCredential = await _firebaseAuth.signInWithCustomToken(token);
+      final user = userCredential.user!;
+
+      final postgresResult = await _connection.db.query(
+        _createCustomerQuery,
+        substitutionValues: {
+          'full_name': user.displayName ?? '',
+          'phone': user.phoneNumber,
+          'language_code': 'en',
+        },
+      );
+      if (postgresResult.isEmpty) {
+        return Response.internalServerError(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.internalServerError,
+              message: 'Customer not created',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final customer = postgresResult.first;
+      return Response.ok(
+        jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.ok,
+            data: Customer.fromJson(customer.toColumnMap()),
+          ).toJson(),
+        ),
+        headers: headers,
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
+          ).toJson(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
             message: e.toString(),
           ).toJson(),
         ),
@@ -83,5 +393,19 @@ class CustomerService {
     SELECT *
     FROM customers
     WHERE id = @customer_id
+    ''';
+
+  static const _updateCustomerQuery = '''
+    UPDATE customers
+    SET full_name = @full_name,
+        language_code = @language_code
+    WHERE id = @customer_id
+    RETURNING *
+    ''';
+
+  static const _createCustomerQuery = '''
+    INSERT INTO customers (full_name, phone, language_code)
+    VALUES (@full_name, @phone, @language_code)
+    RETURNING *
     ''';
 }

@@ -21,145 +21,209 @@ import '../models/order/orders.dart';
 import '../models/store/store.dart';
 
 class OrderService {
-  final DatabaseConnection connection;
+  final DatabaseConnection _connection;
 
-  OrderService(this.connection);
+  OrderService(this._connection);
 
   Router get router => Router()
-    ..get('/', _getOrderByCustomerIdHandler)
+    ..get('/', _getOrdersByCustomerIdHandler)
     ..get('/<orderId>', _getOrderByIdHandler)
     ..post('/', _placeOrderHandler);
 
-  Future<Response> _getOrderByCustomerIdHandler(Request request) async {
-    final customerId = request.requestedUri.queryParameters['customer_id'];
-    final page =
-        int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
-    final pageLimit =
-        int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
+  Future<Response> _getOrdersByCustomerIdHandler(Request request) async {
+    try {
+      final token = request.headers[HttpHeaders.authorizationHeader];
+      final page =
+          int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
+      final pageLimit = int.tryParse(
+        request.requestedUri.queryParameters['page_limit'] ?? '',
+      );
 
-    if (customerId == null || !isUUID(customerId)) {
-      return Response.badRequest(
+      if (token == null) {
+        return Response(
+          HttpStatus.unauthorized,
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.unauthorized,
+              message: 'Unauthorized',
+            ).toJson(),
+          ),
+        );
+      } else if (page == null || page <= 0) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{page} query parameter is required or invalid',
+            ).toJson(),
+          ),
+        );
+      } else if (pageLimit == null || pageLimit <= 0) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{page_limit} query parameter is required or invalid',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final postgresResult = await _connection.db.query(
+        _getOrdersByCustomerIdQuery,
+        substitutionValues: {
+          'customer_id': token,
+          'page_offset': (page - 1) * pageLimit,
+          'page_limit': pageLimit,
+        },
+      );
+
+      final listResult = postgresResult
+          .toList()
+          .map((e) => Orders.fromJson(e.toColumnMap()).toJson())
+          .toList();
+
+      return Response.ok(
+        headers: headers,
+        jsonEncode(
+          ResponseWrapper(statusCode: HttpStatus.ok, data: listResult).toJson(),
+        ),
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
-            message: '{customer_id} query parameter is required or invalid',
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
           ).toJson(),
         ),
       );
-    } else if (page == null || page <= 0) {
-      return Response.badRequest(
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
-            message: '{page} query parameter is required or invalid',
-          ).toJson(),
-        ),
-      );
-    } else if (pageLimit == null || pageLimit <= 0) {
-      return Response.badRequest(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{page_limit} query parameter is required or invalid',
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
           ).toJson(),
         ),
       );
     }
-
-    final postgresResult = await connection.db.query(
-      _getOrderByCustomerIdQuery,
-      substitutionValues: {
-        'customer_id': customerId,
-        'page_offset': (page - 1) * pageLimit,
-        'page_limit': pageLimit,
-      },
-    );
-
-    final listResult = postgresResult
-        .toList()
-        .map((e) => Orders.fromJson(e.toColumnMap()).toJson())
-        .toList();
-
-    return Response.ok(
-      headers: headers,
-      jsonEncode(ResponseWrapper(statusCode: 200, data: listResult).toJson()),
-    );
   }
 
   Future<Response> _getOrderByIdHandler(Request request) async {
-    final orderId = request.params['orderId'];
+    try {
+      final orderId = request.params['orderId'];
 
-    if (!isUUID(orderId)) {
-      return Response.badRequest(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: 400,
-            message: '{order_id} path parameter is invalid',
-          ).toJson(),
-        ),
+      if (!isUUID(orderId)) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{order_id} path parameter is invalid',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final orderResult = await _connection.db.query(
+        _getOrderByIdQuery,
+        substitutionValues: {'id': orderId},
       );
-    }
 
-    final orderResult = await connection.db.query(
-      _getOrderByIdQuery,
-      substitutionValues: {'id': orderId},
-    );
+      if (orderResult.isEmpty) {
+        return Response.notFound(
+          headers: headers,
+          jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.notFound,
+              message: 'Order not found',
+            ).toJson(),
+          ),
+        );
+      }
 
-    if (orderResult.isEmpty) {
-      return Response.notFound(
+      final orderDetailResult = await _connection.db.query(
+        _getOrderDetailByOrderIdQuery,
+        substitutionValues: {'order_id': orderId},
+      );
+
+      if (orderDetailResult.isEmpty) {
+        return Response.internalServerError(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.internalServerError,
+              message: 'Order detail not found',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final orderDetails = await Future.wait(
+        orderDetailResult.map((orderDetailMap) async {
+          final orderDetail =
+              OrderDetail.fromJson(orderDetailMap.toColumnMap());
+          final orderDetailAddonResult = await _connection.db.query(
+            _getOrderDetailAddonByOrderDetailIdQuery,
+            substitutionValues: {
+              'order_detail_id': orderDetail.id,
+            },
+          );
+          return orderDetail.copyWith(
+            addons: orderDetailAddonResult
+                .map(
+                  (orderDetailAddonMap) => OrderDetailAddon.fromJson(
+                    orderDetailAddonMap.toColumnMap(),
+                  ),
+                )
+                .toList(),
+          );
+        }).toList(),
+      );
+
+      final orderMap = Order.fromJson(orderResult.first.toColumnMap())
+          .copyWith(
+            orderDetails: orderDetails,
+          )
+          .toJson();
+
+      return Response.ok(
         headers: headers,
         jsonEncode(
-          ResponseWrapper(
-            statusCode: 404,
-            message: 'Order not found',
-          ).toJson(),
+          ResponseWrapper(statusCode: HttpStatus.ok, data: orderMap).toJson(),
         ),
       );
-    } else if (orderResult.length > 1) {
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
       return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 500,
-            message: 'Multiple orders found',
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
           ).toJson(),
         ),
       );
-    }
-
-    final orderDetailResult = await connection.db.query(
-      _getOrderDetailByOrderIdQuery,
-      substitutionValues: {'order_id': orderId},
-    );
-
-    if (orderDetailResult.isEmpty) {
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
       return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 500,
-            message: 'Order detail not found',
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
           ).toJson(),
         ),
       );
     }
-
-    final orderMap = Order.fromJson(orderResult.first.toColumnMap())
-        .copyWith(
-          orderDetails: orderDetailResult
-              .map((e) => OrderDetail.fromJson(e.toColumnMap()))
-              .toList(),
-        )
-        .toJson();
-
-    return Response.ok(
-      headers: headers,
-      jsonEncode(ResponseWrapper(statusCode: 200, data: orderMap).toJson()),
-    );
   }
 
   Future<Response> _placeOrderHandler(Request request) async {
@@ -181,7 +245,7 @@ class OrderService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{store_id} is required',
             ).toJson(),
           ),
@@ -191,7 +255,7 @@ class OrderService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{order_type} is required',
             ).toJson(),
           ),
@@ -201,7 +265,7 @@ class OrderService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{pickup_type} is required',
             ).toJson(),
           ),
@@ -211,7 +275,7 @@ class OrderService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{schedule_at} should be between 0 and 120',
             ).toJson(),
           ),
@@ -222,7 +286,7 @@ class OrderService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 400,
+              statusCode: HttpStatus.badRequest,
               message: '{items} is required',
             ).toJson(),
           ),
@@ -237,7 +301,7 @@ class OrderService {
               headers: headers,
               body: jsonEncode(
                 ResponseWrapper(
-                  statusCode: 400,
+                  statusCode: HttpStatus.badRequest,
                   message: '{item_id} is required',
                 ).toJson(),
               ),
@@ -247,7 +311,7 @@ class OrderService {
               headers: headers,
               body: jsonEncode(
                 ResponseWrapper(
-                  statusCode: 400,
+                  statusCode: HttpStatus.badRequest,
                   message: '{quantity} is required',
                 ).toJson(),
               ),
@@ -256,7 +320,8 @@ class OrderService {
         }
       }
 
-      final transaction = await connection.db.transaction((connection) async {
+      Order? order;
+      final transaction = await _connection.db.transaction((connection) async {
         final customerResult = await connection.query(
           'SELECT id, full_name FROM customers WHERE id = @customer_id',
           substitutionValues: {'customer_id': authToken},
@@ -269,7 +334,7 @@ class OrderService {
         }
 
         final storeResult = await connection.query(
-          'SELECT id, name FROM stores WHERE id = @store_id',
+          'SELECT id, name, image FROM stores WHERE id = @store_id',
           substitutionValues: {'store_id': storeId},
         );
         late final Store store;
@@ -381,6 +446,8 @@ class OrderService {
 
         if (orderResult.isEmpty) {
           return connection.cancelTransaction(reason: 'Order not created');
+        } else {
+          order = Order.fromJson(orderResult.first.toColumnMap());
         }
 
         for (final orderDetail in orderDetails) {
@@ -395,6 +462,13 @@ class OrderService {
           if (orderDetailResult.isEmpty) {
             return connection.cancelTransaction(
               reason: 'Failed to insert order detail',
+            );
+          } else {
+            order = order?.copyWith(
+              orderDetails: (order?.orderDetails ?? [])
+                ..add(
+                  OrderDetail.fromJson(orderDetailResult.first.toColumnMap()),
+                ),
             );
           }
           if (orderDetailAddonMaps[orderDetail.itemId] != null) {
@@ -413,6 +487,21 @@ class OrderService {
                 return connection.cancelTransaction(
                   reason: 'Failed to insert order detail addon',
                 );
+              } else {
+                order = order?.copyWith(
+                  orderDetails: order?.orderDetails
+                      ?.map(
+                        (e) => e.copyWith(
+                          addons: (e.addons ?? [])
+                            ..add(
+                              OrderDetailAddon.fromJson(
+                                orderDetailAddonResult.first.toColumnMap(),
+                              ),
+                            ),
+                        ),
+                      )
+                      .toList(),
+                );
               }
             }
           }
@@ -424,7 +513,7 @@ class OrderService {
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: 500,
+              statusCode: HttpStatus.internalServerError,
               message: transaction.reason,
             ).toJson(),
           ),
@@ -433,10 +522,7 @@ class OrderService {
         return Response.ok(
           headers: headers,
           jsonEncode(
-            ResponseWrapper(
-              statusCode: 200,
-              message: 'Order successfully created',
-            ).toJson(),
+            ResponseWrapper(statusCode: HttpStatus.ok, data: order).toJson(),
           ),
         );
       }
@@ -446,18 +532,18 @@ class OrderService {
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 500,
+            statusCode: HttpStatus.internalServerError,
             message: e.message,
           ).toJson(),
         ),
       );
     } catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);
-      return Response.badRequest(
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
+            statusCode: HttpStatus.internalServerError,
             message: e.toString(),
           ).toJson(),
         ),
@@ -465,7 +551,7 @@ class OrderService {
     }
   }
 
-  static const _getOrderByCustomerIdQuery = '''
+  static const _getOrdersByCustomerIdQuery = '''
     SELECT orders.*,
         COUNT(order_details) AS total_item
     FROM orders
@@ -486,6 +572,11 @@ class OrderService {
     SELECT *
     FROM order_details
     WHERE order_id = @order_id
+    ''';
+  static const _getOrderDetailAddonByOrderDetailIdQuery = '''
+    SELECT *
+    FROM order_detail_addons
+    WHERE order_detail_id = @order_detail_id
     ''';
 
   static const _insertOrderQuery = '''
@@ -536,7 +627,7 @@ class OrderService {
         NOW() + INTERVAL '1 MINUTES' * @scheduled_at,
         @pickup_type
     )
-    RETURNING id
+    RETURNING *
     ''';
 
   static const _insertOrderDetailQuery = '''
@@ -562,7 +653,7 @@ class OrderService {
         @item_detail,
         @rating,
         @comment
-    ) RETURNING id
+    ) RETURNING *
     ''';
 
   static const _insertOrderDetailAddonQuery = '''
@@ -576,6 +667,6 @@ class OrderService {
         @addon_id,
         @addon_name,
         @addon_price
-    ) RETURNING id
+    ) RETURNING *
     ''';
 }

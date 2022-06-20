@@ -6,19 +6,19 @@ import 'item_addon.dart';
 @immutable
 class ItemAddonCategory extends Equatable {
   const ItemAddonCategory({
-    required this.id,
-    required this.itemId,
-    required this.name,
+    this.id,
+    this.itemId,
+    this.name,
     this.description,
-    required this.isMultipleChoice,
+    this.isMultipleChoice,
     this.addons,
   });
 
-  final String id;
-  final String itemId;
-  final String name;
+  final String? id;
+  final String? itemId;
+  final String? name;
   final String? description;
-  final bool isMultipleChoice;
+  final bool? isMultipleChoice;
   final List<ItemAddon>? addons;
 
   factory ItemAddonCategory.fromJson(Map<String, dynamic> json) =>

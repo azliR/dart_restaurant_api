@@ -8,6 +8,8 @@ environment:
 
 dependencies:
   args: ^2.3.1
+  collection: ^1.16.0
+  dart_jsonwebtoken: ^2.4.1
   equatable: ^2.0.3
   faker: ^2.0.0
   firebase_dart: ^1.0.9

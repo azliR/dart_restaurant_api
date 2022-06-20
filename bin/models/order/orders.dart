@@ -158,7 +158,7 @@ class Orders extends Equatable {
         'coupon_code': couponCode,
         'coupon_name': couponName,
         'discount': discount,
-        'discount_type': discountType?.toString(),
+        'discount_type': discountType?.name,
         'discount_nominal': discountNominal,
         'brutto': brutto,
         'netto': netto,

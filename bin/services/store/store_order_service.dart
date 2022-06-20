@@ -6,31 +6,42 @@ import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-import '../common/constants.dart';
-import '../common/response_wrapper.dart';
-import '../db/connection.dart';
-import '../models/item/item_category.dart';
+import '../../common/constants.dart';
+import '../../common/response_wrapper.dart';
+import '../../db/connection.dart';
+import '../../models/order/order.dart';
+import '../../models/order/orders.dart';
 
-class ItemCategoryService {
+class StoreOrderService {
+  StoreOrderService(this._connection);
+
   final DatabaseConnection _connection;
 
-  ItemCategoryService(this._connection);
-
   Router get router => Router()
-    ..get('/all', _getItemCategoriesHandler)
-    ..post('/', _insertItemCategoryHandler);
+    ..get('/', _getOrdersByStoreIdHandler)
+    ..get('/id/<orderId>', _getOrderByIdHandler);
 
-  Future<Response> _getItemCategoriesHandler(Request request) async {
+  Future<Response> _getOrdersByStoreIdHandler(Request request) async {
     try {
-      final languageCode =
-          request.requestedUri.queryParameters['language_code'];
+      final token = request.headers[HttpHeaders.authorizationHeader];
       final page =
           int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
       final pageLimit = int.tryParse(
         request.requestedUri.queryParameters['page_limit'] ?? '',
       );
 
-      if (page == null || page <= 0) {
+      if (token == null) {
+        return Response(
+          HttpStatus.unauthorized,
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.unauthorized,
+              message: 'Unauthorized',
+            ).toJson(),
+          ),
+        );
+      } else if (page == null || page <= 0) {
         return Response.badRequest(
           headers: headers,
           body: jsonEncode(
@@ -53,16 +64,17 @@ class ItemCategoryService {
       }
 
       final postgresResult = await _connection.db.query(
-        _getItemCategoriesQuery,
+        _getOrdersByStoreIdQuery,
         substitutionValues: {
-          'language_code': languageCode,
+          'customer_id': token,
           'page_offset': (page - 1) * pageLimit,
           'page_limit': pageLimit,
         },
       );
+
       final listResult = postgresResult
           .toList()
-          .map((e) => ItemCategory.fromJson(e.toColumnMap()).toJson())
+          .map((e) => Orders.fromJson(e.toColumnMap()).toJson())
           .toList();
 
       return Response.ok(
@@ -96,35 +108,42 @@ class ItemCategoryService {
     }
   }
 
-  Future<Response> _insertItemCategoryHandler(Request request) async {
+  Future<Response> _getOrderByIdHandler(Request request) async {
     try {
-      final body =
-          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final name = body['name'] as String?;
+      final token = request.headers[HttpHeaders.authorizationHeader]
+          ?.replaceFirst('Bearer ', '');
 
-      if (name == null || name.isEmpty) {
-        return Response.badRequest(
+      if (token == null) {
+        return Response(
+          HttpStatus.unauthorized,
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
-              statusCode: HttpStatus.badRequest,
-              message: '{name} is required',
+              statusCode: HttpStatus.unauthorized,
+              message: 'Unauthorized',
             ).toJson(),
           ),
         );
       }
 
+      final orderId = request.url.pathSegments.last;
+
       final postgresResult = await _connection.db.query(
-        _insertItemCategoryQuery,
-        substitutionValues: {
-          'name': name,
-        },
+        _getOrderByIdQuery,
+        substitutionValues: {'order_id': orderId},
       );
-      final result = postgresResult.first.toColumnMap();
+
+      final order = postgresResult.map((row) {
+        return Order.fromJson(row.toColumnMap());
+      }).toList();
+
       return Response.ok(
         headers: headers,
         jsonEncode(
-          ResponseWrapper(statusCode: HttpStatus.ok, data: result).toJson(),
+          ResponseWrapper(
+            statusCode: HttpStatus.ok,
+            data: order,
+          ).toJson(),
         ),
       );
     } on PostgreSQLException catch (e, stackTrace) {
@@ -152,31 +171,17 @@ class ItemCategoryService {
     }
   }
 
-  static const _getItemCategoriesQuery = '''
-    SELECT item_categories.id,
-        item_category_l10ns.language_code,
-        item_categories.name,
-        item_category_l10ns.name AS translated_name
-    FROM item_categories
-        LEFT JOIN item_category_l10ns ON item_categories.id = item_category_l10ns.category_id
-        AND item_category_l10ns.language_code = @language_code
-    WHERE (
-            SELECT COUNT(*)
-            FROM items
-            WHERE items.category_id = item_categories.id
-        ) > 0
-    ORDER BY (
-            CASE
-                WHEN item_category_l10ns.name IS NOT NULL THEN item_category_l10ns.name
-                ELSE item_categories.name
-            END
-        )
-    LIMIT @page_limit OFFSET @page_offset;
+  static const _getOrdersByStoreIdQuery = '''
+    SELECT *
+    FROM orders
+    WHERE store_id = @store_id
+    ORDER BY created_at DESC
+    LIMIT @page_limit OFFSET @page_offset
     ''';
 
-  static const _insertItemCategoryQuery = '''
-    INSERT INTO item_categories (name)
-    VALUES (@name)
-    RETURNING *;
+  static const _getOrderByIdQuery = '''
+    SELECT *
+    FROM orders
+    WHERE id = @order_id
     ''';
 }

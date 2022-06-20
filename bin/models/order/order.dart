@@ -92,9 +92,8 @@ class Order extends Equatable {
         pickupType: json['pickup_type'] == null
             ? null
             : PickupType.fromString(json['pickup_type'] as String),
-        createdAt: json['created_at'] == null
-            ? null
-            : DateTime.parse(json['created_at'] as String),
+        createdAt:
+            json['created_at'] == null ? null : json['created_at'] as DateTime,
         orderDetails: (json['order_details'] as List<dynamic>?)
             ?.map((e) => OrderDetail.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -169,7 +168,7 @@ class Order extends Equatable {
         'coupon_code': couponCode,
         'coupon_name': couponName,
         'discount': discount,
-        'discount_type': discountType?.toString(),
+        'discount_type': discountType?.name,
         'discount_nominal': discountNominal,
         'brutto': brutto,
         'netto': netto,

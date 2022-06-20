@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
 
+import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
@@ -10,127 +13,192 @@ import '../models/home/nearby_store.dart';
 import '../models/home/special_offer.dart';
 
 class HomeService {
-  final DatabaseConnection connection;
+  final DatabaseConnection _connection;
 
-  HomeService(this.connection);
+  HomeService(this._connection);
 
   Router get router => Router()
     ..get('/nearby', _getNearbyStoreHandler)
     ..get('/special', _getSpecialOffersHandler);
 
   Future<Response> _getNearbyStoreHandler(Request request) async {
-    final latitude =
-        double.tryParse(request.requestedUri.queryParameters['lat'] ?? '');
-    final longitude =
-        double.tryParse(request.requestedUri.queryParameters['lng'] ?? '');
-    final pageLimit =
-        int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
+    try {
+      final latitude =
+          double.tryParse(request.requestedUri.queryParameters['lat'] ?? '');
+      final longitude =
+          double.tryParse(request.requestedUri.queryParameters['lng'] ?? '');
+      final pageLimit = int.tryParse(
+        request.requestedUri.queryParameters['page_limit'] ?? '',
+      );
 
-    if (pageLimit == null || pageLimit <= 0) {
-      return Response.badRequest(
+      if (pageLimit == null || pageLimit <= 0) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{page_limit} query parameter is required or invalid',
+            ).toJson(),
+          ),
+        );
+      } else if (latitude == null || longitude == null) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{lat} and {lng} query parameters are required',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final postgresResult = await _connection.db.query(
+        _nearbyStoreQuery,
+        substitutionValues: {
+          'lat': latitude,
+          'lng': longitude,
+          'page_limit': pageLimit.toString(),
+        },
+      );
+      final listResult = postgresResult
+          .toList()
+          .map((e) => NearbyStore.fromJson(e.toColumnMap()).toJson())
+          .toList();
+
+      return Response.ok(
         headers: headers,
-        body: jsonEncode(
+        jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
-            message: '{page_limit} query parameter is required or invalid',
+            statusCode: HttpStatus.ok,
+            data: listResult,
           ).toJson(),
         ),
       );
-    } else if (latitude == null || longitude == null) {
-      return Response.badRequest(
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
-            message: '{lat} and {lng} query parameters are required',
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
+          ).toJson(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
           ).toJson(),
         ),
       );
     }
-
-    final postgresResult = await connection.db.query(
-      _nearbyStoreQuery,
-      substitutionValues: {
-        'lat': latitude,
-        'lng': longitude,
-        'page_limit': pageLimit.toString(),
-      },
-    );
-    final listResult = postgresResult
-        .toList()
-        .map((e) => NearbyStore.fromJson(e.toColumnMap()).toJson())
-        .toList();
-
-    return Response.ok(
-      headers: headers,
-      jsonEncode(
-        ResponseWrapper(
-          statusCode: 200,
-          data: listResult,
-        ).toJson(),
-      ),
-    );
   }
 
   Future<Response> _getSpecialOffersHandler(Request request) async {
-    final latitude =
-        double.tryParse(request.requestedUri.queryParameters['lat'] ?? '');
-    final longitude =
-        double.tryParse(request.requestedUri.queryParameters['lng'] ?? '');
-    final pageLimit =
-        int.tryParse(request.requestedUri.queryParameters['page_limit'] ?? '');
+    try {
+      final latitude =
+          double.tryParse(request.requestedUri.queryParameters['lat'] ?? '');
+      final longitude =
+          double.tryParse(request.requestedUri.queryParameters['lng'] ?? '');
+      final pageLimit = int.tryParse(
+        request.requestedUri.queryParameters['page_limit'] ?? '',
+      );
 
-    if (pageLimit == null || pageLimit <= 0) {
-      return Response.badRequest(
+      if (pageLimit == null || pageLimit <= 0) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{page_limit} query parameter is required or invalid',
+            ).toJson(),
+          ),
+        );
+      } else if (latitude == null || longitude == null) {
+        return Response.badRequest(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.badRequest,
+              message: '{lat} and {lng} query parameters are required',
+            ).toJson(),
+          ),
+        );
+      }
+
+      final postgresResult = await _connection.db.query(
+        _specialOffersQuery,
+        substitutionValues: {
+          'lat': latitude,
+          'lng': longitude,
+          'page_limit': pageLimit.toString(),
+        },
+      );
+      final listResult = postgresResult
+          .toList()
+          .map((e) => SpecialOffer.fromJson(e.toColumnMap()).toJson())
+          .toList();
+
+      return Response.ok(
+        jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.ok,
+            data: listResult,
+          ).toJson(),
+        ),
+        headers: headers,
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
-            message: '{page_limit} query parameter is required or invalid',
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
           ).toJson(),
         ),
       );
-    } else if (latitude == null || longitude == null) {
-      return Response.badRequest(
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
         headers: headers,
         body: jsonEncode(
           ResponseWrapper(
-            statusCode: 400,
-            message: '{lat} and {lng} query parameters are required',
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
           ).toJson(),
         ),
       );
     }
-
-    final postgresResult = await connection.db.query(
-      _specialOffersQuery,
-      substitutionValues: {
-        'lat': latitude,
-        'lng': longitude,
-        'page_limit': pageLimit.toString(),
-      },
-    );
-    final listResult = postgresResult
-        .toList()
-        .map((e) => SpecialOffer.fromJson(e.toColumnMap()).toJson())
-        .toList();
-
-    return Response.ok(
-      jsonEncode(
-        ResponseWrapper(
-          statusCode: 200,
-          data: listResult,
-        ).toJson(),
-      ),
-      headers: headers,
-    );
   }
 
   static const _nearbyStoreQuery = '''
     SELECT nearby_stores.*,
         postcodes.city,
         postcodes.state,
-        postcodes.country
+        postcodes.country,
+        (
+            SELECT COALESCE(SUM(orders.table_person), 0) AS total_person
+            FROM orders,
+                reservation_tables
+            WHERE reservation_tables.store_id = nearby_stores.id
+                AND orders.table_id = reservation_tables.id
+                AND orders.pickup_type = 'dine-in'
+                AND (
+                    orders.order_type = 'now'
+                    OR (
+                        orders.order_type = 'scheduled'
+                        AND orders.scheduled_at <= NOW()
+                    )
+                )
+        ) AS total_person
     FROM (
             SELECT *,
                 (

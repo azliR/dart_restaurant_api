@@ -4,61 +4,64 @@ import 'package:meta/meta.dart';
 @immutable
 class NearbyStore extends Equatable {
   const NearbyStore({
-    required this.id,
-    required this.storeAdminId,
-    required this.name,
+    this.id,
+    this.storeAdminId,
+    this.name,
     this.description,
     this.image,
     this.banner,
-    required this.phone,
-    required this.streetAddress,
-    required this.postcode,
-    required this.latitude,
-    required this.longitude,
+    this.phone,
+    this.streetAddress,
+    this.postcode,
+    this.latitude,
+    this.longitude,
     this.rating,
-    required this.isActive,
-    required this.distance,
-    required this.city,
-    required this.state,
-    required this.country,
+    this.isActive,
+    this.distance,
+    this.city,
+    this.state,
+    this.country,
+    this.totalPerson,
   });
 
-  final String id;
-  final String storeAdminId;
-  final String name;
+  final String? id;
+  final String? storeAdminId;
+  final String? name;
   final String? description;
   final String? image;
   final String? banner;
-  final String phone;
-  final String streetAddress;
-  final String postcode;
-  final double latitude;
-  final double longitude;
+  final String? phone;
+  final String? streetAddress;
+  final String? postcode;
+  final double? latitude;
+  final double? longitude;
   final double? rating;
-  final bool isActive;
-  final double distance;
-  final String city;
-  final String state;
-  final String country;
+  final bool? isActive;
+  final double? distance;
+  final String? city;
+  final String? state;
+  final String? country;
+  final int? totalPerson;
 
   factory NearbyStore.fromJson(Map<String, dynamic> json) => NearbyStore(
-        id: json['id'] as String,
-        storeAdminId: json['store_admin_id'] as String,
-        name: json['name'] as String,
+        id: json['id'] as String?,
+        storeAdminId: json['store_admin_id'] as String?,
+        name: json['name'] as String?,
         description: json['description'] as String?,
         image: json['image'] as String?,
         banner: json['banner'] as String?,
-        phone: json['phone'] as String,
-        streetAddress: json['street_address'] as String,
-        postcode: json['postcode'] as String,
-        latitude: (json['latitude'] as num).toDouble(),
-        longitude: (json['longitude'] as num).toDouble(),
+        phone: json['phone'] as String?,
+        streetAddress: json['street_address'] as String?,
+        postcode: json['postcode'] as String?,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
         rating: double.tryParse(json['rating'] as String? ?? ''),
-        isActive: json['is_active'] as bool,
-        distance: (json['distance'] as num).toDouble(),
-        city: json['city'] as String,
-        state: json['state'] as String,
-        country: json['country'] as String,
+        isActive: json['is_active'] as bool?,
+        distance: (json['distance'] as num?)?.toDouble(),
+        city: json['city'] as String?,
+        state: json['state'] as String?,
+        country: json['country'] as String?,
+        totalPerson: json['total_person'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -79,6 +82,7 @@ class NearbyStore extends Equatable {
         'city': city,
         'state': state,
         'country': country,
+        'total_person': totalPerson,
       };
 
   @override
@@ -101,6 +105,7 @@ class NearbyStore extends Equatable {
       city,
       state,
       country,
+      totalPerson,
     ];
   }
 }

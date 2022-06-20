@@ -1,3 +1,5 @@
+import 'dart:io';
+
 class ResponseWrapper {
   ResponseWrapper({
     required this.statusCode,
@@ -9,7 +11,7 @@ class ResponseWrapper {
   final String? message;
   final Object? data;
 
-  bool get isSuccess => statusCode >= 200 && statusCode < 300;
+  bool get isSuccess => statusCode >= HttpStatus.ok && statusCode < 300;
 
   Map<String, dynamic> toJson() {
     return {
