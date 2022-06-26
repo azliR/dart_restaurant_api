@@ -10,7 +10,6 @@ import 'package:shelf_router/shelf_router.dart';
 import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
-import '../db/token_service.dart';
 import '../db/utils.dart';
 import '../models/auth/customer.dart';
 
@@ -18,12 +17,10 @@ class CustomerService {
   CustomerService(
     this._connection,
     this._firebaseAuth,
-    this._tokenService,
   );
 
   final DatabaseConnection _connection;
   final FirebaseAuth _firebaseAuth;
-  final TokenService _tokenService;
 
   Router get router => Router()
     ..get('/profile', _getCustomerByIdHandler)

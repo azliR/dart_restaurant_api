@@ -2,14 +2,12 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:firebase_dart/firebase_dart.dart' hide AuthProvider;
-import 'package:redis/redis.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'db/config.dart';
 import 'db/connection.dart';
-import 'db/token_service.dart';
 import 'db/utils.dart';
 import 'services/customer_service.dart';
 import 'services/home_service.dart';
@@ -29,10 +27,10 @@ void main(List<String> args) async {
   const redisPassword = Env.redisPassword;
   const redisPort = Env.redisPort;
 
-  final redisConnection = RedisConnection();
+  // final redisConnection = RedisConnection();
 
-  final tokenService = TokenService(redisConnection, secret);
-  tokenService.start(host: redisHost, password: redisPassword, port: redisPort);
+  // final tokenService = TokenService(redisConnection, secret);
+  // tokenService.start(host: redisHost, password: redisPassword, port: redisPort);
 
   final connection = DatabaseConnection();
   await connection.db.open();
@@ -58,13 +56,11 @@ void main(List<String> args) async {
   final itemCategory = ItemCategoryService(connection);
   final itemSubCategory = ItemSubCategoryService(connection);
   final storeService = StoreService(connection);
-  final customerService =
-      CustomerService(connection, firebaseAuth, tokenService);
+  final customerService = CustomerService(connection, firebaseAuth);
   final orderService = OrderService(connection);
   final templateService = TemplateService(connection);
 
-  final storeAccountService =
-      StoreAccountService(connection, firebaseAuth, tokenService);
+  final storeAccountService = StoreAccountService(connection, firebaseAuth);
   final storeOrderService = StoreOrderService(connection);
   final storeReportService = StoreReportService(connection);
 

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:firebase_dart/auth.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
@@ -11,7 +10,6 @@ import 'package:shelf_router/shelf_router.dart';
 import '../../common/constants.dart';
 import '../../common/response_wrapper.dart';
 import '../../db/connection.dart';
-import '../../db/token_service.dart';
 import '../../db/utils.dart';
 import '../../models/auth/store_admin.dart';
 import '../../models/enums/enums.dart';
@@ -21,16 +19,13 @@ class StoreAccountService {
   StoreAccountService(
     this._connection,
     this._firebaseAuth,
-    this._tokenService,
   );
 
   final DatabaseConnection _connection;
   final FirebaseAuth _firebaseAuth;
-  final TokenService _tokenService;
 
-  Router get router => Router()
-    ..post('/auth', _loginStoreHandler)
-    ..post('/refreshtoken', _refreshTokenHandler);
+  Router get router => Router()..post('/auth', _loginStoreHandler);
+  // ..post('/refreshtoken', _refreshTokenHandler);
 
   Future<Response> _registerStoreHandler(Request request) async {
     final payload = await request.readAsString();
@@ -154,7 +149,7 @@ class StoreAccountService {
 
       final storeAdmin = postgresResult.first;
 
-      final tokenPair = await _tokenService.createTokenPair(token);
+      // final tokenPair = await _tokenService.createTokenPair(token);
 
       return Response.ok(
         headers: headers,
@@ -163,7 +158,7 @@ class StoreAccountService {
             statusCode: HttpStatus.ok,
             data: {
               'user': StoreAdmin.fromJson(storeAdmin.toColumnMap()),
-              'token': tokenPair.toJson(),
+              // 'token': tokenPair.toJson(),
             },
           ).toJson(),
         ),
@@ -193,74 +188,74 @@ class StoreAccountService {
     }
   }
 
-  Future<Response> _refreshTokenHandler(Request request) async {
-    final auth = request.context['authDetails'] as JWT?;
-    if (auth is JWT) {
-      return Response.badRequest(
-        body: ResponseWrapper(
-          statusCode: HttpStatus.badRequest,
-          message: 'Id token is still valid!',
-        ).toJson(),
-      );
-    }
+  // Future<Response> _refreshTokenHandler(Request request) async {
+  //   final auth = request.context['authDetails'] as JWT?;
+  //   if (auth is JWT) {
+  //     return Response.badRequest(
+  //       body: ResponseWrapper(
+  //         statusCode: HttpStatus.badRequest,
+  //         message: 'Id token is still valid!',
+  //       ).toJson(),
+  //     );
+  //   }
 
-    final payload = await request.readAsString();
-    final payloadMap = json.decode(payload) as Map<String, dynamic>;
+  //   final payload = await request.readAsString();
+  //   final payloadMap = json.decode(payload) as Map<String, dynamic>;
 
-    // Verify current token pair
-    late JWT token;
+  //   // Verify current token pair
+  //   late JWT token;
 
-    try {
-      token = JWT.verify(
-        payloadMap['refreshToken'].toString(),
-        SecretKey(_tokenService.secret),
-      );
-      final dbToken = await _tokenService.getRefreshToken(token.jwtId!);
+  //   try {
+  //     token = JWT.verify(
+  //       payloadMap['refreshToken'].toString(),
+  //       SecretKey(_tokenService.secret),
+  //     );
+  //     final dbToken = await _tokenService.getRefreshToken(token.jwtId!);
 
-      if (dbToken == null) {
-        return Response.badRequest(
-          body: ResponseWrapper(
-            statusCode: HttpStatus.badRequest,
-            message: 'Refresh token is not recognised',
-          ).toJson(),
-        );
-      }
-    } on JWTExpiredError {
-      return Response.badRequest(
-        body: ResponseWrapper(
-          statusCode: HttpStatus.badRequest,
-          message: 'Refresh token is expired',
-        ).toJson(),
-      );
-    } catch (e) {
-      return Response.badRequest(
-        body: ResponseWrapper(
-          statusCode: HttpStatus.badRequest,
-          message: e.toString(),
-        ).toJson(),
-      );
-    }
+  //     if (dbToken == null) {
+  //       return Response.badRequest(
+  //         body: ResponseWrapper(
+  //           statusCode: HttpStatus.badRequest,
+  //           message: 'Refresh token is not recognised',
+  //         ).toJson(),
+  //       );
+  //     }
+  //   } on JWTExpiredError {
+  //     return Response.badRequest(
+  //       body: ResponseWrapper(
+  //         statusCode: HttpStatus.badRequest,
+  //         message: 'Refresh token is expired',
+  //       ).toJson(),
+  //     );
+  //   } catch (e) {
+  //     return Response.badRequest(
+  //       body: ResponseWrapper(
+  //         statusCode: HttpStatus.badRequest,
+  //         message: e.toString(),
+  //       ).toJson(),
+  //     );
+  //   }
 
-    // Generate new pair
-    try {
-      final tokenPair = await _tokenService.createTokenPair(token.subject!);
-      return Response.ok(
-        headers: {HttpHeaders.contentTypeHeader: ContentType.json.mimeType},
-        ResponseWrapper(
-          statusCode: HttpStatus.ok,
-          data: json.encode(tokenPair.toJson()),
-        ).toJson(),
-      );
-    } catch (e) {
-      return Response.internalServerError(
-        body: ResponseWrapper(
-          statusCode: HttpStatus.internalServerError,
-          message:
-              'There was a problem creating a new token. Please try again.',
-        ).toJson(),
-      );
-    }
-  }
+  //   // Generate new pair
+  //   try {
+  //     final tokenPair = await _tokenService.createTokenPair(token.subject!);
+  //     return Response.ok(
+  //       headers: {HttpHeaders.contentTypeHeader: ContentType.json.mimeType},
+  //       ResponseWrapper(
+  //         statusCode: HttpStatus.ok,
+  //         data: json.encode(tokenPair.toJson()),
+  //       ).toJson(),
+  //     );
+  //   } catch (e) {
+  //     return Response.internalServerError(
+  //       body: ResponseWrapper(
+  //         statusCode: HttpStatus.internalServerError,
+  //         message:
+  //             'There was a problem creating a new token. Please try again.',
+  //       ).toJson(),
+  //     );
+  //   }
+  // }
 
   static const _getStoreAdminQuery = '''
     SELECT *
