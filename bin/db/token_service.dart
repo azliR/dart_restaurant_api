@@ -27,7 +27,7 @@ class TokenService {
     final tokenId = const Uuid().v4();
     final token = generateJwt(
       subject: userId,
-      issuer: 'http://localhost',
+      issuer: 'http://localhostt',
       expiry: tokenExpiry,
       jwtId: tokenId,
       secret: secret,
@@ -36,7 +36,7 @@ class TokenService {
     const refreshTokenExpiry = Duration(days: 7);
     final refreshToken = generateJwt(
       subject: userId,
-      issuer: 'http://localhost',
+      issuer: 'http://localhostv',
       expiry: refreshTokenExpiry,
       jwtId: tokenId,
       secret: secret,

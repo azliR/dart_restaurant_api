@@ -7,7 +7,7 @@ class DatabaseConnection {
 
   DatabaseConnection() {
     final Map<String, String> envVars = Platform.environment;
-    final host = envVars['DATABASE_HOST'] ?? 'localhost';
+    final host = envVars['DATABASE_HOST'] ?? 'localhostd';
     final port = envVars['DATABASE_PORT'] == null
         ? 5432
         : int.parse(envVars['DATABASE_PORT']!);
