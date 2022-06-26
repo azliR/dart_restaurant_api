@@ -52,6 +52,19 @@ class TokenService {
     );
   }
 
+  String base64Padded(String value) {
+    final lenght = value.length;
+
+    switch (lenght % 4) {
+      case 2:
+        return value.padRight(lenght + 2, '=');
+      case 3:
+        return value.padRight(lenght + 1, '=');
+      default:
+        return value;
+    }
+  }
+
   Future<void> addRefreshToken(String id, String token, Duration expiry) async {
     await _cache.send_object(['SET', '$_prefix:$id', token]);
     await _cache.send_object(['EXPIRE', '$_prefix:$id', expiry.inSeconds]);

@@ -58,7 +58,8 @@ void main(List<String> args) async {
   final itemCategory = ItemCategoryService(connection);
   final itemSubCategory = ItemSubCategoryService(connection);
   final storeService = StoreService(connection);
-  final customerService = CustomerService(connection, firebaseAuth);
+  final customerService =
+      CustomerService(connection, firebaseAuth, tokenService);
   final orderService = OrderService(connection);
   final templateService = TemplateService(connection);
 
@@ -67,9 +68,10 @@ void main(List<String> args) async {
   final storeOrderService = StoreOrderService(connection);
   final storeReportService = StoreReportService(connection);
 
-  final orderRoute = const Pipeline()
+  final storeReportRoute = const Pipeline()
+      .addMiddleware(handleAuth())
       .addMiddleware(checkAuthorisation())
-      .addHandler(orderService.router);
+      .addHandler(storeReportService.router);
 
   final router = Router()
     ..mount('/api/v1/user', customerService.router)
@@ -78,11 +80,11 @@ void main(List<String> args) async {
     ..mount('/api/v1/user/item/category', itemCategory.router)
     ..mount('/api/v1/user/item/sub_category', itemSubCategory.router)
     ..mount('/api/v1/user/store', storeService.router)
-    ..mount('/api/v1/user/order', orderRoute)
+    ..mount('/api/v1/user/order', orderService.router)
     ..mount('/api/v1/user/template', templateService.router)
     ..mount('/api/v1/store', storeAccountService.router)
     ..mount('/api/v1/store/order', storeOrderService.router)
-    ..mount('/api/v1/store/trend', storeReportService.router);
+    ..mount('/api/v1/store/trend', storeReportRoute);
 
   // Use any available host or container IP (usually `0.0.0.0`).
   final ip = InternetAddress.anyIPv4;

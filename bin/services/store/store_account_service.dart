@@ -12,8 +12,10 @@ import '../../common/constants.dart';
 import '../../common/response_wrapper.dart';
 import '../../db/connection.dart';
 import '../../db/token_service.dart';
+import '../../db/utils.dart';
 import '../../models/auth/store_admin.dart';
 import '../../models/enums/enums.dart';
+import '../../models/token_payload/token_payload.dart';
 
 class StoreAccountService {
   StoreAccountService(
@@ -115,7 +117,6 @@ class StoreAccountService {
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final token = body['token'] as String?;
-      final email = body['email'] as String?;
 
       if (token == null) {
         return Response(
@@ -130,10 +131,13 @@ class StoreAccountService {
         );
       }
 
+      final jwt = await verifyFirebaseToken(token);
+
       final postgresResult = await _connection.db.query(
         _getStoreAdminQuery,
         substitutionValues: {
-          'email': email,
+          'email':
+              TokenPayload.fromJson(jwt.payload as Map<String, dynamic>).email,
         },
       );
       if (postgresResult.isEmpty) {

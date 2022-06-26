@@ -10,13 +10,20 @@ import 'package:shelf_router/shelf_router.dart';
 import '../common/constants.dart';
 import '../common/response_wrapper.dart';
 import '../db/connection.dart';
+import '../db/token_service.dart';
+import '../db/utils.dart';
 import '../models/auth/customer.dart';
 
 class CustomerService {
+  CustomerService(
+    this._connection,
+    this._firebaseAuth,
+    this._tokenService,
+  );
+
   final DatabaseConnection _connection;
   final FirebaseAuth _firebaseAuth;
-
-  CustomerService(this._connection, this._firebaseAuth);
+  final TokenService _tokenService;
 
   Router get router => Router()
     ..get('/profile', _getCustomerByIdHandler)
@@ -316,7 +323,6 @@ class CustomerService {
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final token = body['token'] as String?;
-      final phone = body['phone'] as String?;
 
       if (token == null) {
         return Response(
@@ -331,10 +337,12 @@ class CustomerService {
         );
       }
 
+      final jwt = await verifyFirebaseToken(token);
+
       final loginResult = await _connection.db.query(
         _loginCustomerQuery,
         substitutionValues: {
-          'phone': phone,
+          // 'phone': phone,
         },
       );
 
@@ -343,7 +351,7 @@ class CustomerService {
           _createCustomerQuery,
           substitutionValues: {
             'full_name': '',
-            'phone': phone,
+            // 'phone': phone,
             'language_code': 'en',
           },
         );

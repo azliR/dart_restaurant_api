@@ -9,18 +9,24 @@ environment:
 dependencies:
   args: ^2.3.1
   collection: ^1.16.0
+  corsac_jwt: ^1.0.0-nullsafety.1
+  crypto: ^3.0.2
   dart_jsonwebtoken: ^2.4.1
   envify: ^2.0.2
   equatable: ^2.0.3
   faker: ^2.0.0
   firebase_dart: ^1.0.9
+  jose: ^0.3.2
+  jwt_decoder: ^2.0.1
   meta: ^1.8.0
-  postgres: ^2.4.4
+  pointycastle: ^3.6.0
+  postgres: ^2.4.5
   redis: ^3.1.0
-  shelf: ^1.3.0
-  shelf_router: ^1.1.2
+  shelf: ^1.3.1
+  shelf_router: ^1.1.3
   uuid: ^3.0.6
   validators: ^3.0.0
+  x509: ^0.2.2
 
 dev_dependencies:
   build_runner: ^2.1.11

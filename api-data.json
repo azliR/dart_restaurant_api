@@ -1,4 +1,41 @@
 {
+    "tokenPayload": {
+        "iss": "https://securetoken.google.com/restaurant-70076",
+        "aud": "restaurant-70076",
+        "auth_time": 1655963522,
+        "user_id": "ldfxh8ZekZhZSULFY03SIhLhRuJ2",
+        "sub": "ldfxh8ZekZhZSULFY03SIhLhRuJ2",
+        "iat": 1655963522,
+        "exp": 1655967122,
+        "phone_number": "+6289660952861",
+        "firebase": {
+            "identities": {
+                "phone": [
+                    "+6289660952861"
+                ]
+            },
+            "sign_in_provider": "phone"
+        }
+    },
+    "tokenPayloadEmail": {
+        "iss": "https://securetoken.google.com/restaurant-70076",
+        "aud": "restaurant-70076",
+        "auth_time": 1656032425,
+        "user_id": "lyD4CtUdLGYMJYKgfM4I8k5F9kE3",
+        "sub": "lyD4CtUdLGYMJYKgfM4I8k5F9kE3",
+        "iat": 1656032425,
+        "exp": 1656036025,
+        "email": "rizalhadiyansah@gmail.com",
+        "email_verified": false,
+        "firebase": {
+            "identities": {
+                "email": [
+                    "rizalhadiyansah@gmail.com"
+                ]
+            },
+            "sign_in_provider": "password"
+        }
+    },
     "home": {
         "nearby_stores": [
             {
