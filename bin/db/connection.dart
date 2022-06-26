@@ -21,6 +21,7 @@ class DatabaseConnection {
       database,
       username: username,
       password: password,
+      useSSL: true,
     );
   }
 }
