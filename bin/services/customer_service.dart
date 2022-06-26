@@ -6,7 +6,6 @@ import 'package:firebase_dart/auth.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:validators/validators.dart';
 
 import '../common/constants.dart';
 import '../common/response_wrapper.dart';
@@ -57,13 +56,13 @@ class CustomerService {
 
       final customer = postgresResult.first;
       return Response.ok(
+        headers: headers,
         jsonEncode(
           ResponseWrapper(
             statusCode: HttpStatus.ok,
             data: Customer.fromJson(customer.toColumnMap()),
           ).toJson(),
         ),
-        headers: headers,
       );
     } on PostgreSQLException catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);
@@ -99,7 +98,7 @@ class CustomerService {
       final name = body['full_name'] as String?;
       final languageCode = body['language'] as String?;
 
-      if (customerId == null || !isUUID(customerId)) {
+      if (customerId == null) {
         return Response.notFound(
           headers: headers,
           jsonEncode(
@@ -317,6 +316,7 @@ class CustomerService {
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final token = body['token'] as String?;
+      final phone = body['phone'] as String?;
 
       if (token == null) {
         return Response(
@@ -331,39 +331,55 @@ class CustomerService {
         );
       }
 
-      final userCredential = await _firebaseAuth.signInWithCustomToken(token);
-      final user = userCredential.user!;
-
-      final postgresResult = await _connection.db.query(
-        _createCustomerQuery,
+      final loginResult = await _connection.db.query(
+        _loginCustomerQuery,
         substitutionValues: {
-          'full_name': user.displayName ?? '',
-          'phone': user.phoneNumber,
-          'language_code': 'en',
+          'phone': phone,
         },
       );
-      if (postgresResult.isEmpty) {
-        return Response.internalServerError(
+
+      if (loginResult.isEmpty) {
+        final postgresResult = await _connection.db.query(
+          _createCustomerQuery,
+          substitutionValues: {
+            'full_name': '',
+            'phone': phone,
+            'language_code': 'en',
+          },
+        );
+        if (postgresResult.isEmpty) {
+          return Response.internalServerError(
+            headers: headers,
+            body: jsonEncode(
+              ResponseWrapper(
+                statusCode: HttpStatus.internalServerError,
+                message: 'Customer not created',
+              ).toJson(),
+            ),
+          );
+        }
+
+        final customer = postgresResult.first;
+        return Response.ok(
           headers: headers,
-          body: jsonEncode(
+          jsonEncode(
             ResponseWrapper(
-              statusCode: HttpStatus.internalServerError,
-              message: 'Customer not created',
+              statusCode: HttpStatus.ok,
+              data: Customer.fromJson(customer.toColumnMap()),
+            ).toJson(),
+          ),
+        );
+      } else {
+        return Response.ok(
+          headers: headers,
+          jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.ok,
+              data: Customer.fromJson(loginResult.first.toColumnMap()),
             ).toJson(),
           ),
         );
       }
-
-      final customer = postgresResult.first;
-      return Response.ok(
-        jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.ok,
-            data: Customer.fromJson(customer.toColumnMap()),
-          ).toJson(),
-        ),
-        headers: headers,
-      );
     } on PostgreSQLException catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);
       return Response.internalServerError(
@@ -401,6 +417,12 @@ class CustomerService {
         language_code = @language_code
     WHERE id = @customer_id
     RETURNING *
+    ''';
+
+  static const _loginCustomerQuery = '''
+    SELECT *
+    FROM customers
+    WHERE phone = @phone
     ''';
 
   static const _createCustomerQuery = '''

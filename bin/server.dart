@@ -2,10 +2,15 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:firebase_dart/firebase_dart.dart' hide AuthProvider;
+import 'package:redis/redis.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'db/config.dart';
 import 'db/connection.dart';
+import 'db/token_service.dart';
+import 'db/utils.dart';
 import 'services/customer_service.dart';
 import 'services/home_service.dart';
 import 'services/item_category_service.dart';
@@ -19,6 +24,16 @@ import 'services/store_service.dart';
 import 'services/template_service.dart';
 
 void main(List<String> args) async {
+  const secret = Env.secretKey;
+  const redisHost = Env.redisHost;
+  const redisPassword = Env.redisPassword;
+  const redisPort = Env.redisPort;
+
+  final redisConnection = RedisConnection();
+
+  final tokenService = TokenService(redisConnection, secret);
+  tokenService.start(host: redisHost, password: redisPassword, port: redisPort);
+
   final connection = DatabaseConnection();
   await connection.db.open();
 
@@ -47,9 +62,14 @@ void main(List<String> args) async {
   final orderService = OrderService(connection);
   final templateService = TemplateService(connection);
 
-  final storeAccountService = StoreAccountService(connection, firebaseAuth);
+  final storeAccountService =
+      StoreAccountService(connection, firebaseAuth, tokenService);
   final storeOrderService = StoreOrderService(connection);
   final storeReportService = StoreReportService(connection);
+
+  final orderRoute = const Pipeline()
+      .addMiddleware(checkAuthorisation())
+      .addHandler(orderService.router);
 
   final router = Router()
     ..mount('/api/v1/user', customerService.router)
@@ -58,7 +78,7 @@ void main(List<String> args) async {
     ..mount('/api/v1/user/item/category', itemCategory.router)
     ..mount('/api/v1/user/item/sub_category', itemSubCategory.router)
     ..mount('/api/v1/user/store', storeService.router)
-    ..mount('/api/v1/user/order', orderService.router)
+    ..mount('/api/v1/user/order', orderRoute)
     ..mount('/api/v1/user/template', templateService.router)
     ..mount('/api/v1/store', storeAccountService.router)
     ..mount('/api/v1/store/order', storeOrderService.router)

@@ -146,13 +146,13 @@ class HomeService {
           .toList();
 
       return Response.ok(
+        headers: headers,
         jsonEncode(
           ResponseWrapper(
             statusCode: HttpStatus.ok,
             data: listResult,
           ).toJson(),
         ),
-        headers: headers,
       );
     } on PostgreSQLException catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);

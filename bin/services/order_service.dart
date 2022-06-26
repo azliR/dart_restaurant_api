@@ -32,7 +32,8 @@ class OrderService {
 
   Future<Response> _getOrdersByCustomerIdHandler(Request request) async {
     try {
-      final token = request.headers[HttpHeaders.authorizationHeader];
+      final token = request.headers[HttpHeaders.authorizationHeader]
+          ?.replaceAll('Bearer ', '');
       final page =
           int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
       final pageLimit = int.tryParse(
@@ -228,7 +229,8 @@ class OrderService {
 
   Future<Response> _placeOrderHandler(Request request) async {
     try {
-      final authToken = request.headers[HttpHeaders.authorizationHeader];
+      final authToken = request.headers[HttpHeaders.authorizationHeader]
+          ?.replaceAll('Bearer ', '');
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final storeId = body['store_id'] as String?;
