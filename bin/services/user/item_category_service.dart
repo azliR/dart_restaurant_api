@@ -6,10 +6,10 @@ import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-import '../common/constants.dart';
-import '../common/response_wrapper.dart';
-import '../db/connection.dart';
-import '../models/item/item_category.dart';
+import '../../common/constants.dart';
+import '../../common/response_wrapper.dart';
+import '../../db/connection.dart';
+import '../../models/item/item_category.dart';
 
 class ItemCategoryService {
   final DatabaseConnection _connection;

@@ -1,231 +1,30 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' hide log;
 
+import 'package:faker/faker.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:validators/validators.dart';
 
-import '../common/constants.dart';
-import '../common/response_wrapper.dart';
-import '../db/connection.dart';
-import '../models/auth/customer.dart';
-import '../models/enums/enums.dart';
-import '../models/item/item.dart';
-import '../models/item/item_addon.dart';
-import '../models/order/order.dart';
-import '../models/order/order_detail.dart';
-import '../models/order/order_detail_addon.dart';
-import '../models/order/orders.dart';
-import '../models/store/store.dart';
+import '../../common/constants.dart';
+import '../../common/response_wrapper.dart';
+import '../../db/connection.dart';
+import '../../models/auth/customer.dart';
+import '../../models/enums/enums.dart';
+import '../../models/item/item.dart';
+import '../../models/item/item_addon.dart';
+import '../../models/order/order_detail.dart';
+import '../../models/order/order_detail_addon.dart';
+import '../../models/store/store.dart';
 
-class OrderService {
+class TemplateService {
   final DatabaseConnection _connection;
 
-  OrderService(this._connection);
+  TemplateService(this._connection);
 
-  Router get router => Router()
-    ..get('/', _getOrdersByCustomerIdHandler)
-    ..get('/<orderId>', _getOrderByIdHandler)
-    ..post('/', _placeOrderHandler);
-
-  Future<Response> _getOrdersByCustomerIdHandler(Request request) async {
-    try {
-      final token = request.headers[HttpHeaders.authorizationHeader]
-          ?.replaceAll('Bearer ', '');
-      final page =
-          int.tryParse(request.requestedUri.queryParameters['page'] ?? '');
-      final pageLimit = int.tryParse(
-        request.requestedUri.queryParameters['page_limit'] ?? '',
-      );
-
-      if (token == null) {
-        return Response(
-          HttpStatus.unauthorized,
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.unauthorized,
-              message: 'Unauthorized',
-            ).toJson(),
-          ),
-        );
-      } else if (page == null || page <= 0) {
-        return Response.badRequest(
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.badRequest,
-              message: '{page} query parameter is required or invalid',
-            ).toJson(),
-          ),
-        );
-      } else if (pageLimit == null || pageLimit <= 0) {
-        return Response.badRequest(
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.badRequest,
-              message: '{page_limit} query parameter is required or invalid',
-            ).toJson(),
-          ),
-        );
-      }
-
-      final postgresResult = await _connection.db.query(
-        _getOrdersByCustomerIdQuery,
-        substitutionValues: {
-          'customer_id': token,
-          'page_offset': (page - 1) * pageLimit,
-          'page_limit': pageLimit,
-        },
-      );
-
-      final listResult = postgresResult
-          .toList()
-          .map((e) => Orders.fromJson(e.toColumnMap()).toJson())
-          .toList();
-
-      return Response.ok(
-        headers: headers,
-        jsonEncode(
-          ResponseWrapper(statusCode: HttpStatus.ok, data: listResult).toJson(),
-        ),
-      );
-    } on PostgreSQLException catch (e, stackTrace) {
-      log(e.toString(), stackTrace: stackTrace);
-      return Response.internalServerError(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.internalServerError,
-            message: e.message,
-          ).toJson(),
-        ),
-      );
-    } catch (e, stackTrace) {
-      log(e.toString(), stackTrace: stackTrace);
-      return Response.internalServerError(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.internalServerError,
-            message: e.toString(),
-          ).toJson(),
-        ),
-      );
-    }
-  }
-
-  Future<Response> _getOrderByIdHandler(Request request) async {
-    try {
-      final orderId = request.params['orderId'];
-
-      if (!isUUID(orderId)) {
-        return Response.badRequest(
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.badRequest,
-              message: '{order_id} path parameter is invalid',
-            ).toJson(),
-          ),
-        );
-      }
-
-      final orderResult = await _connection.db.query(
-        _getOrderByIdQuery,
-        substitutionValues: {'id': orderId},
-      );
-
-      if (orderResult.isEmpty) {
-        return Response.notFound(
-          headers: headers,
-          jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.notFound,
-              message: 'Order not found',
-            ).toJson(),
-          ),
-        );
-      }
-
-      final orderDetailResult = await _connection.db.query(
-        _getOrderDetailByOrderIdQuery,
-        substitutionValues: {'order_id': orderId},
-      );
-
-      if (orderDetailResult.isEmpty) {
-        return Response.internalServerError(
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.internalServerError,
-              message: 'Order detail not found',
-            ).toJson(),
-          ),
-        );
-      }
-
-      final orderDetails = await Future.wait(
-        orderDetailResult.map((orderDetailMap) async {
-          final orderDetail =
-              OrderDetail.fromJson(orderDetailMap.toColumnMap());
-          final orderDetailAddonResult = await _connection.db.query(
-            _getOrderDetailAddonByOrderDetailIdQuery,
-            substitutionValues: {
-              'order_detail_id': orderDetail.id,
-            },
-          );
-          return orderDetail.copyWith(
-            addons: orderDetailAddonResult
-                .map(
-                  (orderDetailAddonMap) => OrderDetailAddon.fromJson(
-                    orderDetailAddonMap.toColumnMap(),
-                  ),
-                )
-                .toList(),
-          );
-        }).toList(),
-      );
-
-      final orderMap = Order.fromJson(orderResult.first.toColumnMap())
-          .copyWith(
-            orderDetails: orderDetails,
-          )
-          .toJson();
-
-      return Response.ok(
-        headers: headers,
-        jsonEncode(
-          ResponseWrapper(statusCode: HttpStatus.ok, data: orderMap).toJson(),
-        ),
-      );
-    } on PostgreSQLException catch (e, stackTrace) {
-      log(e.toString(), stackTrace: stackTrace);
-      return Response.internalServerError(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.internalServerError,
-            message: e.message,
-          ).toJson(),
-        ),
-      );
-    } catch (e, stackTrace) {
-      log(e.toString(), stackTrace: stackTrace);
-      return Response.internalServerError(
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.internalServerError,
-            message: e.toString(),
-          ).toJson(),
-        ),
-      );
-    }
-  }
+  Router get router => Router()..post('/order', _createOrderTemplateHandler);
 
   Future<Response> _placeOrderHandler(Request request) async {
     try {
@@ -239,6 +38,7 @@ class OrderService {
       final orderType = body['order_type'] as String?;
       final pickupType = body['pickup_type'] as String?;
       final scheduleAt = body['schedule_at'] as int?;
+      final createdAt = body['created_at'] as String?;
       final itemMaps =
           (body['items'] as List<dynamic>?)?.cast<Map<String, dynamic>>();
 
@@ -322,7 +122,6 @@ class OrderService {
         }
       }
 
-      Order? order;
       final transaction = await _connection.db.transaction((connection) async {
         final customerResult = await connection.query(
           'SELECT id, full_name FROM customers WHERE id = @customer_id',
@@ -439,17 +238,16 @@ class OrderService {
             // minus by coupon
             'brutto': orderTotal,
             'netto': orderTotal,
-            'status': OrderStatus.pending.name,
+            'status': OrderStatus.complete.name,
             'order_type': orderType,
             'scheduled_at': scheduleAt,
             'pickup_type': pickupType,
+            'created_at': createdAt,
           },
         );
 
         if (orderResult.isEmpty) {
           return connection.cancelTransaction(reason: 'Order not created');
-        } else {
-          order = Order.fromJson(orderResult.first.toColumnMap());
         }
 
         for (final orderDetail in orderDetails) {
@@ -458,19 +256,18 @@ class OrderService {
             substitutionValues: orderDetail
                 .copyWith(
                   orderId: orderResult.first.toColumnMap()['id'] as String,
+                  comment: faker.randomGenerator.boolean()
+                      ? faker.lorem.sentence()
+                      : null,
+                  rating: faker.randomGenerator.boolean()
+                      ? Random().nextInt(4) + 1
+                      : null,
                 )
                 .toJson(),
           );
           if (orderDetailResult.isEmpty) {
             return connection.cancelTransaction(
               reason: 'Failed to insert order detail',
-            );
-          } else {
-            order = order?.copyWith(
-              orderDetails: (order?.orderDetails ?? [])
-                ..add(
-                  OrderDetail.fromJson(orderDetailResult.first.toColumnMap()),
-                ),
             );
           }
           if (orderDetailAddonMaps[orderDetail.itemId] != null) {
@@ -488,21 +285,6 @@ class OrderService {
               if (orderDetailAddonResult.isEmpty) {
                 return connection.cancelTransaction(
                   reason: 'Failed to insert order detail addon',
-                );
-              } else {
-                order = order?.copyWith(
-                  orderDetails: order?.orderDetails
-                      ?.map(
-                        (e) => e.copyWith(
-                          addons: (e.addons ?? [])
-                            ..add(
-                              OrderDetailAddon.fromJson(
-                                orderDetailAddonResult.first.toColumnMap(),
-                              ),
-                            ),
-                        ),
-                      )
-                      .toList(),
                 );
               }
             }
@@ -524,7 +306,10 @@ class OrderService {
         return Response.ok(
           headers: headers,
           jsonEncode(
-            ResponseWrapper(statusCode: HttpStatus.ok, data: order).toJson(),
+            ResponseWrapper(
+              statusCode: HttpStatus.ok,
+              message: 'Order successfully created',
+            ).toJson(),
           ),
         );
       }
@@ -553,33 +338,92 @@ class OrderService {
     }
   }
 
-  static const _getOrdersByCustomerIdQuery = '''
-    SELECT orders.*,
-        COUNT(order_details) AS total_item
-    FROM orders
-        LEFT JOIN order_details ON orders.id = order_details.order_id
-    WHERE customer_id = @customer_id
-    GROUP BY orders.id
-    ORDER BY created_at DESC
-    LIMIT @page_limit OFFSET @page_offset
-    ''';
-
-  static const _getOrderByIdQuery = '''
-    SELECT *
-    FROM orders
-    WHERE id = @id
-    ''';
-
-  static const _getOrderDetailByOrderIdQuery = '''
-    SELECT *
-    FROM order_details
-    WHERE order_id = @order_id
-    ''';
-  static const _getOrderDetailAddonByOrderDetailIdQuery = '''
-    SELECT *
-    FROM order_detail_addons
-    WHERE order_detail_id = @order_detail_id
-    ''';
+  Future<Response> _createOrderTemplateHandler(Request request) async {
+    try {
+      for (var i = 0; i < 1000; i++) {
+        final isSchedule = faker.randomGenerator.boolean();
+        final a = await _placeOrderHandler(
+          Request(
+            request.method,
+            request.requestedUri,
+            headers: request.headers,
+            context: request.context,
+            encoding: request.encoding,
+            handlerPath: request.handlerPath,
+            onHijack: request.hijack,
+            protocolVersion: request.protocolVersion,
+            url: request.url,
+            body: jsonEncode({
+              'store_id': '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+              'order_type':
+                  isSchedule ? OrderType.scheduled.name : OrderType.now.name,
+              'coupon': '',
+              'schedule_at': isSchedule ? Random().nextInt(120) : null,
+              'pickup_type': PickupType
+                  .values[Random().nextInt(PickupType.values.length)].name,
+              'created_at': Faker()
+                  .date
+                  .dateTime(minYear: 2021, maxYear: 2022)
+                  .toIso8601String(),
+              'items': Set.from(
+                Iterable.generate(
+                  Random().nextInt(10) + 1,
+                  (index) => {
+                    'item_id': [
+                      '7b1c8c31-4a0f-4457-8c71-8f06631aa9ae',
+                      'c171b7c0-9457-49af-8872-b0ff5081bbc1',
+                      'e42dd265-873e-44d9-abaa-5f937c9d4d6e',
+                      '0098d69a-1d47-4f1b-a423-58e157388744',
+                      '2cf7dd2d-59c0-4b5d-a61c-7177b1120247',
+                      '427643c1-9b79-4016-a806-cdef76a79ab7',
+                      'c9113655-b1dc-4415-8ad1-34540db0df92',
+                      '3ceeecb7-5061-480a-8dcc-036b54a860cb',
+                      'c61f2371-f967-4eda-bf39-c7e2875ef3aa',
+                      '1e6bc1ae-8772-43ae-823e-7c0c9c199658',
+                      '1dc4e414-1c77-4dfe-834c-ab6794169a5d',
+                      '82c8dbdb-9e10-4724-ac7f-55574ceceb74',
+                      'c7f2bc71-3bfa-4315-83ef-ddc1f75a3225',
+                    ][Random().nextInt(13)],
+                    'quantity': Random().nextInt(10) + 1,
+                  },
+                ),
+              ).toList()
+            }),
+          ),
+        );
+      }
+      return Response.ok(
+        jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.ok,
+            message: 'Order template successfully created',
+          ).toJson(),
+        ),
+      );
+    } on PostgreSQLException catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.message,
+          ).toJson(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      log(e.toString(), stackTrace: stackTrace);
+      return Response.internalServerError(
+        headers: headers,
+        body: jsonEncode(
+          ResponseWrapper(
+            statusCode: HttpStatus.internalServerError,
+            message: e.toString(),
+          ).toJson(),
+        ),
+      );
+    }
+  }
 
   static const _insertOrderQuery = '''
     INSERT INTO orders (
@@ -604,7 +448,8 @@ class OrderService {
         status,
         order_type,
         scheduled_at,
-        pickup_type
+        pickup_type,
+        created_at
     ) VALUES (
         @customer_id,
         @store_id,
@@ -627,9 +472,10 @@ class OrderService {
         @status,
         @order_type,
         NOW() + INTERVAL '1 MINUTES' * @scheduled_at,
-        @pickup_type
+        @pickup_type,
+        @created_at
     )
-    RETURNING *
+    RETURNING id
     ''';
 
   static const _insertOrderDetailQuery = '''
@@ -655,7 +501,7 @@ class OrderService {
         @item_detail,
         @rating,
         @comment
-    ) RETURNING *
+    ) RETURNING id
     ''';
 
   static const _insertOrderDetailAddonQuery = '''
@@ -669,6 +515,6 @@ class OrderService {
         @addon_id,
         @addon_name,
         @addon_price
-    ) RETURNING *
+    ) RETURNING id
     ''';
 }

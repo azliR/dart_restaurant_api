@@ -7,10 +7,10 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:validators/validators.dart';
 
-import '../common/constants.dart';
-import '../common/response_wrapper.dart';
-import '../db/connection.dart';
-import '../models/store/store.dart';
+import '../../common/constants.dart';
+import '../../common/response_wrapper.dart';
+import '../../db/connection.dart';
+import '../../models/store/store.dart';
 
 class StoreService {
   final DatabaseConnection _connection;

@@ -40,7 +40,7 @@ CREATE TABLE coupons (
 
 CREATE TABLE coupon_customers(
     coupon_id UUID NOT NULL,
-    customer_id UUID NOT NULL,
+    customer_id VARCHAR(128) NOT NULL,
     CONSTRAINT pk_coupon_customers PRIMARY KEY (coupon_id, customer_id)
 );
 
@@ -51,7 +51,7 @@ CREATE TABLE coupon_stores(
 );
 
 CREATE TABLE customers (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id VARCHAR(128) NOT NULL,
     full_name VARCHAR(64) NOT NULL,
     phone VARCHAR(16) NOT NULL,
     language_code VARCHAR(2) NOT NULL,
@@ -120,7 +120,7 @@ CREATE TABLE item_sub_category_l10ns (
 
 CREATE TABLE orders (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL,
+    customer_id VARCHAR(128) NOT NULL,
     store_id UUID NOT NULL,
     store_account_id UUID,
     table_id UUID,
@@ -338,7 +338,7 @@ ADD CONSTRAINT fk_store_staffs_on_store FOREIGN KEY (store_id) REFERENCES stores
 -- insert store_accounts
 INSERT INTO public.store_accounts (id, full_name, "role", language_code, created_at)
 VALUES(
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
+        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
         'Rizal Hadiyansah',
         'admin'::public."store_role_enum",
         'en',
@@ -347,7 +347,7 @@ VALUES(
 
 INSERT INTO public.store_accounts (id, full_name, "role", language_code, created_at)
 VALUES(
-        '5edb2b6f-105d-44d7-8c25-89aa899485d6'::uuid,
+        '5edb2b6f-105d-44d7-8c25-89aa899485d6',
         'Ririn Siti Arofah',
         'admin'::public."store_role_enum",
         'en',
@@ -356,7 +356,7 @@ VALUES(
 
 INSERT INTO public.store_accounts (id, full_name, "role", language_code, created_at)
 VALUES(
-        'b7bd94f8-8bc3-46e2-9f89-0101825b051d'::uuid,
+        'b7bd94f8-8bc3-46e2-9f89-0101825b051d',
         'Aisha Azlir',
         'admin'::public."store_role_enum",
         'en',
@@ -366,19 +366,19 @@ VALUES(
 -- insert store_admins
 INSERT INTO public.store_admins (store_account_id, email)
 VALUES(
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
+        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
         'rizalhadiyansah@gmail.com'
     );
 
 INSERT INTO public.store_admins (store_account_id, email)
 VALUES(
-        '5edb2b6f-105d-44d7-8c25-89aa899485d6'::uuid,
+        '5edb2b6f-105d-44d7-8c25-89aa899485d6',
         'ririnsitiarofah03@gmail.com'
     );
 
 INSERT INTO public.store_admins (store_account_id, email)
 VALUES(
-        'b7bd94f8-8bc3-46e2-9f89-0101825b051d'::uuid,
+        'b7bd94f8-8bc3-46e2-9f89-0101825b051d',
         'aishaazlir@gmail.com'
     );
 
@@ -403,8 +403,8 @@ INSERT INTO public.stores (
         is_active
     )
 VALUES(
-        '4007f665-8f90-4b94-9d7e-d98ffadcd5c6'::uuid,
-        '5edb2b6f-105d-44d7-8c25-89aa899485d6'::uuid,
+        '4007f665-8f90-4b94-9d7e-d98ffadcd5c6',
+        '5edb2b6f-105d-44d7-8c25-89aa899485d6',
         'KFC',
         NULL,
         'https://upload.wikimedia.org/wikipedia/id/thumb/b/bf/KFC_logo.svg/1200px-KFC_logo.svg.png',
@@ -434,8 +434,8 @@ INSERT INTO public.stores (
         is_active
     )
 VALUES(
-        '420eb312-f6e1-40dc-9a1a-04190123432f'::uuid,
-        'b7bd94f8-8bc3-46e2-9f89-0101825b051d'::uuid,
+        '420eb312-f6e1-40dc-9a1a-04190123432f',
+        'b7bd94f8-8bc3-46e2-9f89-0101825b051d',
         'Kopi Kenangan',
         NULL,
         'https://awards.brandingforum.org/wp-content/uploads/2020/12/KOPI-KENANGAN_LOGO-2020.png',
@@ -465,8 +465,8 @@ INSERT INTO public.stores (
         is_active
     )
 VALUES(
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
         'Alpha Store',
         'Alpha Store',
         'https://seeklogo.com/images/M/mcdonald-s-logo-255A7B5646-seeklogo.com.png',
@@ -489,8 +489,8 @@ INSERT INTO public.store_staffs (
         is_locked
     )
 VALUES(
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'a_lpha',
         '$2a$12$q3mLZR3i86cSR90DSf1X6u1lXfGAy4KILvbxR3fQjDSJVTkSpVEyC',
         false
@@ -499,13 +499,13 @@ VALUES(
 -- insert store_pickup_types
 INSERT INTO public.store_pickup_types (store_id, pickup_type)
 VALUES(
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'pickup'::public."pickup_type_enum"
     );
 
 INSERT INTO public.store_pickup_types (store_id, pickup_type)
 VALUES(
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'dine-in'::public."pickup_type_enum"
     );
 
@@ -519,8 +519,8 @@ INSERT INTO public.reservation_tables (
         is_for_one_order
     )
 VALUES(
-        '947898b3-be6c-4a70-86b8-2286154af42b'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '947898b3-be6c-4a70-86b8-2286154af42b',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Table 1',
         2,
         10000.00,
@@ -536,8 +536,8 @@ INSERT INTO public.reservation_tables (
         is_for_one_order
     )
 VALUES(
-        '083f426a-5539-44e2-9e7f-79199c6b2d3e'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '083f426a-5539-44e2-9e7f-79199c6b2d3e',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Table 2',
         2,
         10000.00,
@@ -553,8 +553,8 @@ INSERT INTO public.reservation_tables (
         is_for_one_order
     )
 VALUES(
-        '739e0eef-7ad2-4cc4-9b93-b4983c270beb'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '739e0eef-7ad2-4cc4-9b93-b4983c270beb',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Table 3',
         2,
         10000.00,
@@ -570,8 +570,8 @@ INSERT INTO public.reservation_tables (
         is_for_one_order
     )
 VALUES(
-        'fe6fef7e-9ca6-4366-bd44-4394e099e209'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        'fe6fef7e-9ca6-4366-bd44-4394e099e209',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Table 4',
         4,
         10000.00,
@@ -581,79 +581,79 @@ VALUES(
 -- insert item_categories
 INSERT INTO public.item_categories (id, "name")
 VALUES(
-        '00b1347c-0d82-4c1b-adcb-28247d299170'::uuid,
+        '00b1347c-0d82-4c1b-adcb-28247d299170',
         'Beverages'
     );
 
 INSERT INTO public.item_categories (id, "name")
 VALUES(
-        '32eebcf9-c49f-4bb3-bf1f-a1cc95256451'::uuid,
+        '32eebcf9-c49f-4bb3-bf1f-a1cc95256451',
         'Fast food'
     );
 
 INSERT INTO public.item_categories (id, "name")
 VALUES(
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
         'Snacks'
     );
 
 INSERT INTO public.item_categories (id, "name")
 VALUES(
-        'dc8c798e-288f-4176-8e58-587bdd5a591f'::uuid,
+        'dc8c798e-288f-4176-8e58-587bdd5a591f',
         'Chicken & duck'
     );
 
 INSERT INTO public.item_categories (id, "name")
 VALUES(
-        'a205065c-7f2d-4eac-af8f-1e51f0ff0a18'::uuid,
+        'a205065c-7f2d-4eac-af8f-1e51f0ff0a18',
         'Breads'
     );
 
 INSERT INTO public.item_categories (id, "name")
 VALUES(
-        '52bece28-3a8d-4ec8-8d25-07cce771ac19'::uuid,
+        '52bece28-3a8d-4ec8-8d25-07cce771ac19',
         'Rice'
     );
 
 -- insert item_category_l10ns
 INSERT INTO public.item_category_l10ns (category_id, language_code, "name")
 VALUES(
-        '00b1347c-0d82-4c1b-adcb-28247d299170'::uuid,
+        '00b1347c-0d82-4c1b-adcb-28247d299170',
         'id',
         'Minuman'
     );
 
 INSERT INTO public.item_category_l10ns (category_id, language_code, "name")
 VALUES(
-        '32eebcf9-c49f-4bb3-bf1f-a1cc95256451'::uuid,
+        '32eebcf9-c49f-4bb3-bf1f-a1cc95256451',
         'id',
         'Cepat Saji'
     );
 
 INSERT INTO public.item_category_l10ns (category_id, language_code, "name")
 VALUES(
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
         'id',
         'Jajanan'
     );
 
 INSERT INTO public.item_category_l10ns (category_id, language_code, "name")
 VALUES(
-        'dc8c798e-288f-4176-8e58-587bdd5a591f'::uuid,
+        'dc8c798e-288f-4176-8e58-587bdd5a591f',
         'id',
         'Ayam & bebek'
     );
 
 INSERT INTO public.item_category_l10ns (category_id, language_code, "name")
 VALUES(
-        'a205065c-7f2d-4eac-af8f-1e51f0ff0a18'::uuid,
+        'a205065c-7f2d-4eac-af8f-1e51f0ff0a18',
         'id',
         'Roti'
     );
 
 INSERT INTO public.item_category_l10ns (category_id, language_code, "name")
 VALUES(
-        '52bece28-3a8d-4ec8-8d25-07cce771ac19'::uuid,
+        '52bece28-3a8d-4ec8-8d25-07cce771ac19',
         'id',
         'Paket Nasi'
     );
@@ -661,71 +661,71 @@ VALUES(
 -- insert item_sub_categories
 INSERT INTO public.item_sub_categories (id, store_id, "name")
 VALUES(
-        'db126848-5a16-4723-bcb1-524695a0d286'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        'db126848-5a16-4723-bcb1-524695a0d286',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Breakfasts'
     );
 
 INSERT INTO public.item_sub_categories (id, store_id, "name")
 VALUES(
-        '0d36862d-0165-4bc6-a497-198e8021d892'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '0d36862d-0165-4bc6-a497-198e8021d892',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Vegetarian'
     );
 
 INSERT INTO public.item_sub_categories (id, store_id, "name")
 VALUES(
-        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Desserts'
     );
 
 INSERT INTO public.item_sub_categories (id, store_id, "name")
 VALUES(
-        '28811fd2-7dfa-430e-82b3-909754d962ec'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '28811fd2-7dfa-430e-82b3-909754d962ec',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Super Crispy'
     );
 
 INSERT INTO public.item_sub_categories (id, store_id, "name")
 VALUES(
-        '79509666-e5a0-41c3-a9e6-828797936cd3'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
+        '79509666-e5a0-41c3-a9e6-828797936cd3',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'Snacks'
     );
 
 -- insert item_sub_category_l10ns
 INSERT INTO public.item_sub_category_l10ns (sub_category_id, language_code, "name")
 VALUES(
-        'db126848-5a16-4723-bcb1-524695a0d286'::uuid,
+        'db126848-5a16-4723-bcb1-524695a0d286',
         'id',
         'Sarapan'
     );
 
 INSERT INTO public.item_sub_category_l10ns (sub_category_id, language_code, "name")
 VALUES(
-        '0d36862d-0165-4bc6-a497-198e8021d892'::uuid,
+        '0d36862d-0165-4bc6-a497-198e8021d892',
         'id',
         'Vegetarian'
     );
 
 INSERT INTO public.item_sub_category_l10ns (sub_category_id, language_code, "name")
 VALUES(
-        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad'::uuid,
+        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad',
         'id',
         'Makanan Penutup'
     );
 
 INSERT INTO public.item_sub_category_l10ns (sub_category_id, language_code, "name")
 VALUES(
-        '28811fd2-7dfa-430e-82b3-909754d962ec'::uuid,
+        '28811fd2-7dfa-430e-82b3-909754d962ec',
         'id',
         'Super Crispy'
     );
 
 INSERT INTO public.item_sub_category_l10ns (sub_category_id, language_code, "name")
 VALUES(
-        '79509666-e5a0-41c3-a9e6-828797936cd3'::uuid,
+        '79509666-e5a0-41c3-a9e6-828797936cd3',
         'id',
         'Camilan'
     );
@@ -745,10 +745,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '7b1c8c31-4a0f-4457-8c71-8f06631aa9ae'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '00b1347c-0d82-4c1b-adcb-28247d299170'::uuid,
-        'db126848-5a16-4723-bcb1-524695a0d286'::uuid,
+        '7b1c8c31-4a0f-4457-8c71-8f06631aa9ae',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '00b1347c-0d82-4c1b-adcb-28247d299170',
+        'db126848-5a16-4723-bcb1-524695a0d286',
         'McDonalds Burger',
         'https://www.koalahero.com/wp-content/uploads/2019/10/Makanan-McDonald.jpg',
         10000.00,
@@ -772,10 +772,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        'c171b7c0-9457-49af-8872-b0ff5081bbc1'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '52bece28-3a8d-4ec8-8d25-07cce771ac19'::uuid,
-        'db126848-5a16-4723-bcb1-524695a0d286'::uuid,
+        'c171b7c0-9457-49af-8872-b0ff5081bbc1',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '52bece28-3a8d-4ec8-8d25-07cce771ac19',
+        'db126848-5a16-4723-bcb1-524695a0d286',
         'Sup Oyong Soun Pedas',
         'https://kbu-cdn.com/dk/wp-content/uploads/sup-oyong-soun-pedas.jpg',
         10000.00,
@@ -799,10 +799,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        'e42dd265-873e-44d9-abaa-5f937c9d4d6e'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        'db126848-5a16-4723-bcb1-524695a0d286'::uuid,
+        'e42dd265-873e-44d9-abaa-5f937c9d4d6e',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        'db126848-5a16-4723-bcb1-524695a0d286',
         'Roti Bakar Keju Milky',
         'https://kbu-cdn.com/dk/wp-content/uploads/roti-bakar-keju-milky.jpg',
         14000.00,
@@ -826,10 +826,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '0098d69a-1d47-4f1b-a423-58e157388744'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '52bece28-3a8d-4ec8-8d25-07cce771ac19'::uuid,
-        'db126848-5a16-4723-bcb1-524695a0d286'::uuid,
+        '0098d69a-1d47-4f1b-a423-58e157388744',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '52bece28-3a8d-4ec8-8d25-07cce771ac19',
+        'db126848-5a16-4723-bcb1-524695a0d286',
         'Tomat Goreng Telur Pedas',
         'https://kbu-cdn.com/dk/wp-content/uploads/tomat-goreng-telur-pedas.jpg',
         12000.00,
@@ -853,10 +853,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '2cf7dd2d-59c0-4b5d-a61c-7177b1120247'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        '0d36862d-0165-4bc6-a497-198e8021d892'::uuid,
+        '2cf7dd2d-59c0-4b5d-a61c-7177b1120247',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        '0d36862d-0165-4bc6-a497-198e8021d892',
         'Kelereng Keju Kentang',
         'https://kbu-cdn.com/dk/wp-content/uploads/kelereng-keju-kentang.jpg',
         9000.00,
@@ -880,10 +880,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '427643c1-9b79-4016-a806-cdef76a79ab7'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        '0d36862d-0165-4bc6-a497-198e8021d892'::uuid,
+        '427643c1-9b79-4016-a806-cdef76a79ab7',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        '0d36862d-0165-4bc6-a497-198e8021d892',
         'Corn Flakes Cookies',
         'https://kbu-cdn.com/dk/wp-content/uploads/corn-flakes-cookies.jpg',
         8000.00,
@@ -907,10 +907,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        'c9113655-b1dc-4415-8ad1-34540db0df92'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '00b1347c-0d82-4c1b-adcb-28247d299170'::uuid,
-        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad'::uuid,
+        'c9113655-b1dc-4415-8ad1-34540db0df92',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '00b1347c-0d82-4c1b-adcb-28247d299170',
+        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad',
         'Bukok Pandan',
         'https://kbu-cdn.com/dk/wp-content/uploads/bukok-pandan.jpg',
         5000.00,
@@ -934,10 +934,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '3ceeecb7-5061-480a-8dcc-036b54a860cb'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad'::uuid,
+        '3ceeecb7-5061-480a-8dcc-036b54a860cb',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        '296b4d9d-e1ac-4a5e-8981-209eb1a1dbad',
         'Martabak Jantung Pisang',
         'https://kbu-cdn.com/dk/wp-content/uploads/martabak-jantung-pisang.jpg',
         7000.00,
@@ -961,10 +961,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        'c61f2371-f967-4eda-bf39-c7e2875ef3aa'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        '79509666-e5a0-41c3-a9e6-828797936cd3'::uuid,
+        'c61f2371-f967-4eda-bf39-c7e2875ef3aa',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        '79509666-e5a0-41c3-a9e6-828797936cd3',
         'Sosis Krispy',
         'https://kbu-cdn.com/dk/wp-content/uploads/sosis-krispy.jpg',
         6000.00,
@@ -988,10 +988,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '1e6bc1ae-8772-43ae-823e-7c0c9c199658'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        '79509666-e5a0-41c3-a9e6-828797936cd3'::uuid,
+        '1e6bc1ae-8772-43ae-823e-7c0c9c199658',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        '79509666-e5a0-41c3-a9e6-828797936cd3',
         'Kentang Tornado Renyah',
         'https://kbu-cdn.com/dk/wp-content/uploads/kentang-tornado-renyah.jpg',
         7000.00,
@@ -1015,10 +1015,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '1dc4e414-1c77-4dfe-834c-ab6794169a5d'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '5abecb46-5672-45aa-9605-0f41cb6b6208'::uuid,
-        '28811fd2-7dfa-430e-82b3-909754d962ec'::uuid,
+        '1dc4e414-1c77-4dfe-834c-ab6794169a5d',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '5abecb46-5672-45aa-9605-0f41cb6b6208',
+        '28811fd2-7dfa-430e-82b3-909754d962ec',
         'Tahu Super Crispy',
         'https://kbu-cdn.com/dk/wp-content/uploads/tahu-super-crispy.jpg',
         11000.00,
@@ -1042,10 +1042,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        '82c8dbdb-9e10-4724-ac7f-55574ceceb74'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        'dc8c798e-288f-4176-8e58-587bdd5a591f'::uuid,
-        '28811fd2-7dfa-430e-82b3-909754d962ec'::uuid,
+        '82c8dbdb-9e10-4724-ac7f-55574ceceb74',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        'dc8c798e-288f-4176-8e58-587bdd5a591f',
+        '28811fd2-7dfa-430e-82b3-909754d962ec',
         'Ayam Saus Lemon',
         'https://kbu-cdn.com/dk/wp-content/uploads/ayam-saus-lemon.jpg',
         15000.00,
@@ -1069,10 +1069,10 @@ INSERT INTO public.items (
         is_active
     )
 VALUES(
-        'c7f2bc71-3bfa-4315-83ef-ddc1f75a3225'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        '32eebcf9-c49f-4bb3-bf1f-a1cc95256451'::uuid,
-        '28811fd2-7dfa-430e-82b3-909754d962ec'::uuid,
+        'c7f2bc71-3bfa-4315-83ef-ddc1f75a3225',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        '32eebcf9-c49f-4bb3-bf1f-a1cc95256451',
+        '28811fd2-7dfa-430e-82b3-909754d962ec',
         'Keripik Usus',
         'https://kbu-cdn.com/dk/wp-content/uploads/keripik-usus.jpg',
         12000.00,
@@ -1091,8 +1091,8 @@ INSERT INTO public.item_addon_categories (
         is_multiple_choice
     )
 VALUES(
-        '02fa8872-1c60-481f-b169-65792d5da007'::uuid,
-        'c61f2371-f967-4eda-bf39-c7e2875ef3aa'::uuid,
+        '02fa8872-1c60-481f-b169-65792d5da007',
+        'c61f2371-f967-4eda-bf39-c7e2875ef3aa',
         'Flavour',
         'Choose the flavor you like!',
         false
@@ -1106,8 +1106,8 @@ INSERT INTO public.item_addon_categories (
         is_multiple_choice
     )
 VALUES(
-        '17b3be90-d177-4e59-8582-cf6c97f94aa9'::uuid,
-        'c61f2371-f967-4eda-bf39-c7e2875ef3aa'::uuid,
+        '17b3be90-d177-4e59-8582-cf6c97f94aa9',
+        'c61f2371-f967-4eda-bf39-c7e2875ef3aa',
         'Add on',
         'More delicious with add ons!',
         true
@@ -1116,40 +1116,40 @@ VALUES(
 -- insert item_addons
 INSERT INTO public.item_addons (id, addon_category_id, "name", price)
 VALUES(
-        '4e21ce09-4995-4645-8270-9fbaf09de3d6'::uuid,
-        '02fa8872-1c60-481f-b169-65792d5da007'::uuid,
+        '4e21ce09-4995-4645-8270-9fbaf09de3d6',
+        '02fa8872-1c60-481f-b169-65792d5da007',
         'Original',
         NULL
     );
 
 INSERT INTO public.item_addons (id, addon_category_id, "name", price)
 VALUES(
-        'e092f6ab-742b-4424-835c-508016db7100'::uuid,
-        '02fa8872-1c60-481f-b169-65792d5da007'::uuid,
+        'e092f6ab-742b-4424-835c-508016db7100',
+        '02fa8872-1c60-481f-b169-65792d5da007',
         'Balado',
         NULL
     );
 
 INSERT INTO public.item_addons (id, addon_category_id, "name", price)
 VALUES(
-        '31c64ea7-184c-4afa-b618-ef10f58d721d'::uuid,
-        '02fa8872-1c60-481f-b169-65792d5da007'::uuid,
+        '31c64ea7-184c-4afa-b618-ef10f58d721d',
+        '02fa8872-1c60-481f-b169-65792d5da007',
         'Salty',
         NULL
     );
 
 INSERT INTO public.item_addons (id, addon_category_id, "name", price)
 VALUES(
-        'b1bf5ef6-1aa4-473f-961a-256cb006505a'::uuid,
-        '17b3be90-d177-4e59-8582-cf6c97f94aa9'::uuid,
+        'b1bf5ef6-1aa4-473f-961a-256cb006505a',
+        '17b3be90-d177-4e59-8582-cf6c97f94aa9',
         'Extra ketchup',
         1000.00
     );
 
 INSERT INTO public.item_addons (id, addon_category_id, "name", price)
 VALUES(
-        'cb6c9073-8680-4a6a-85a4-bf9bb7c91ee3'::uuid,
-        '17b3be90-d177-4e59-8582-cf6c97f94aa9'::uuid,
+        'cb6c9073-8680-4a6a-85a4-bf9bb7c91ee3',
+        '17b3be90-d177-4e59-8582-cf6c97f94aa9',
         'Extra fried onions',
         2000.00
     );
@@ -1157,7 +1157,7 @@ VALUES(
 -- insert customers
 INSERT INTO public.customers (id, full_name, phone, language_code, created_at)
 VALUES(
-        '1c7b3156-986b-487b-8d6c-2db03806ca30'::uuid,
+        '1c7b3156-986b-487b-8d6c-2db03806ca30',
         'Rizal Hadiyansah',
         '08123456789',
         'en',
@@ -1184,8 +1184,8 @@ INSERT INTO public.coupons (
         is_valid
     )
 VALUES(
-        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6'::uuid,
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
+        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6',
+        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
         'BREAK',
         'Coupon New Customer',
         'This coupon is for new customer from store Alpha Store',
@@ -1205,15 +1205,15 @@ VALUES(
 -- insert coupon_customers
 INSERT INTO public.coupon_customers (coupon_id, customer_id)
 VALUES(
-        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6'::uuid,
-        '1c7b3156-986b-487b-8d6c-2db03806ca30'::uuid
+        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6',
+        '1c7b3156-986b-487b-8d6c-2db03806ca30'
     );
 
 -- insert coupon_stores
 INSERT INTO public.coupon_stores (coupon_id, store_id)
 VALUES(
-        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid
+        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d'
     );
 
 -- insert orders
@@ -1244,12 +1244,12 @@ INSERT INTO public.orders (
         created_at
     )
 VALUES(
-        'd0dc6416-d1cb-4e4c-b5d0-3af7b176fb4c'::uuid,
-        '1c7b3156-986b-487b-8d6c-2db03806ca30'::uuid,
-        '93ab578c-46fa-42f6-b61f-ef13fe13045d'::uuid,
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f'::uuid,
-        '947898b3-be6c-4a70-86b8-2286154af42b'::uuid,
-        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6'::uuid,
+        'd0dc6416-d1cb-4e4c-b5d0-3af7b176fb4c',
+        '1c7b3156-986b-487b-8d6c-2db03806ca30',
+        '93ab578c-46fa-42f6-b61f-ef13fe13045d',
+        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        '947898b3-be6c-4a70-86b8-2286154af42b',
+        '19fb0734-01a4-40a1-a95e-ff6d18fc2af6',
         'Rizal Hadiyansah',
         'Alpha Store',
         'https://www.koalahero.com/wp-content/uploads/2019/10/Makanan-McDonald.jpg',
@@ -1285,9 +1285,9 @@ INSERT INTO public.order_details (
         comment
     )
 VALUES(
-        '2cb56b76-c756-4b57-ac66-1f346e4bc065'::uuid,
-        'd0dc6416-d1cb-4e4c-b5d0-3af7b176fb4c'::uuid,
-        '7b1c8c31-4a0f-4457-8c71-8f06631aa9ae'::uuid,
+        '2cb56b76-c756-4b57-ac66-1f346e4bc065',
+        'd0dc6416-d1cb-4e4c-b5d0-3af7b176fb4c',
+        '7b1c8c31-4a0f-4457-8c71-8f06631aa9ae',
         'McDonalds Burger',
         2,
         9000.00,
@@ -1307,9 +1307,9 @@ INSERT INTO public.order_detail_addons (
         addon_price
     )
 VALUES(
-        '92120f69-a875-4389-a835-33e46c36a3e0'::uuid,
-        '2cb56b76-c756-4b57-ac66-1f346e4bc065'::uuid,
-        'cb6c9073-8680-4a6a-85a4-bf9bb7c91ee3'::uuid,
+        '92120f69-a875-4389-a835-33e46c36a3e0',
+        '2cb56b76-c756-4b57-ac66-1f346e4bc065',
+        'cb6c9073-8680-4a6a-85a4-bf9bb7c91ee3',
         'Extra sauce Kari Spesial',
         5000.00
     );

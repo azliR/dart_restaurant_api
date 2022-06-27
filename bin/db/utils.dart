@@ -1,63 +1,62 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:math' hide log;
 
-import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:shelf/shelf.dart';
 
 import '../common/constants.dart';
+import '../common/exceptions.dart';
 import '../common/response_wrapper.dart';
 
-Middleware handleCors() {
-  return createMiddleware(
-    requestHandler: (Request request) {
-      if (request.method == 'OPTIONS') {
-        return Response.ok('', headers: headers);
-      }
-      return null;
-    },
-    responseHandler: (Response response) {
-      return response.change(headers: headers);
-    },
-  );
-}
+// Middleware handleCors() {
+//   return createMiddleware(
+//     requestHandler: (Request request) {
+//       if (request.method == 'OPTIONS') {
+//         return Response.ok('', headers: headers);
+//       }
+//       return null;
+//     },
+//     responseHandler: (Response response) {
+//       return response.change(headers: headers);
+//     },
+//   );
+// }
 
-String generateSalt([int length = 32]) {
-  final rand = Random.secure();
-  final saltBytes = List<int>.generate(length, (_) => rand.nextInt(256));
-  return base64.encode(saltBytes);
-}
+// String generateSalt([int length = 32]) {
+//   final rand = Random.secure();
+//   final saltBytes = List<int>.generate(length, (_) => rand.nextInt(256));
+//   return base64.encode(saltBytes);
+// }
 
-String hashPassword(String password, String salt) {
-  const codec = Utf8Codec();
-  final key = codec.encode(password);
-  final saltBytes = codec.encode(salt);
-  final hmac = Hmac(sha256, key);
-  final digest = hmac.convert(saltBytes);
-  return digest.toString();
-}
+// String hashPassword(String password, String salt) {
+//   const codec = Utf8Codec();
+//   final key = codec.encode(password);
+//   final saltBytes = codec.encode(salt);
+//   final hmac = Hmac(sha256, key);
+//   final digest = hmac.convert(saltBytes);
+//   return digest.toString();
+// }
 
-String generateJwt({
-  required String subject,
-  required String issuer,
-  required String secret,
-  required String jwtId,
-  required Duration expiry,
-}) {
-  final jwt = JWT(
-    {
-      'iat': DateTime.now().millisecondsSinceEpoch,
-    },
-    subject: subject,
-    issuer: issuer,
-    jwtId: jwtId,
-  );
-  return jwt.sign(SecretKey(secret), expiresIn: expiry);
-}
+// String generateJwt({
+//   required String subject,
+//   required String issuer,
+//   required String secret,
+//   required String jwtId,
+//   required Duration expiry,
+// }) {
+//   final jwt = JWT(
+//     {
+//       'iat': DateTime.now().millisecondsSinceEpoch,
+//     },
+//     subject: subject,
+//     issuer: issuer,
+//     jwtId: jwtId,
+//   );
+//   return jwt.sign(SecretKey(secret), expiresIn: expiry);
+// }
 
 String base64Padded(String value) {
   final lenght = value.length;
@@ -87,11 +86,11 @@ Future<JWT> verifyFirebaseToken(String token) async {
   final header = jsonBase64.decode(base64Padded(parts[0]));
 
   if (header == null || header is! Map<String, dynamic>) {
-    throw JWTInvalidError('invalid header');
+    throw JWTException('Invalid header');
   }
 
   if (header['typ'] != 'JWT') {
-    throw JWTInvalidError('not a jwt');
+    throw JWTException('The given token is not a JWT');
   }
 
   final body = utf8.encode('${parts[0]}.${parts[1]}');
@@ -105,47 +104,47 @@ Future<JWT> verifyFirebaseToken(String token) async {
   final payload = jsonDecode(payloadString) as Map<String, dynamic>;
 
   if (!jsonWebKey.verify(body, signature, algorithm: header['alg'] as String)) {
-    throw JWTInvalidError('invalid header');
+    throw JWTException('Invalid signature');
   }
 
   if (payload.containsKey('exp')) {
     final exp =
         DateTime.fromMillisecondsSinceEpoch((payload['exp'] as int) * 1000);
     if (!exp.isAfter(DateTime.now())) {
-      throw JWTExpiredError();
+      throw JWTException('Token expired');
     }
   }
 
   if (!payload.containsKey('iat')) {
-    throw JWTInvalidError('invalid issue at');
+    throw JWTException('Invalid token');
   }
   final iat =
       DateTime.fromMillisecondsSinceEpoch((payload['iat'] as int) * 1000);
   if (!iat.isBefore(DateTime.now())) {
-    throw JWTInvalidError('invalid issue at');
+    throw JWTException('Invalid issued at time');
   }
 
   if (!payload.containsKey('auth_time')) {
-    throw JWTInvalidError('invalid auth_time');
+    throw JWTException('Invalid token');
   }
   final authTime =
       DateTime.fromMillisecondsSinceEpoch((payload['auth_time'] as int) * 1000);
   if (!authTime.isBefore(DateTime.now())) {
-    throw JWTInvalidError('invalid auth_time');
+    throw JWTException('Invalid auth time');
   }
 
   if (!payload.containsKey('aud') || payload['aud'] != audience) {
-    throw JWTInvalidError('invalid audience');
+    throw JWTException('Invalid audience');
   }
 
   if (!payload.containsKey('sub') ||
       payload['sub'] == null ||
       (payload['sub'] as String).isEmpty) {
-    throw JWTInvalidError('invalid subject');
+    throw JWTException('Invalid subject');
   }
 
   if (!payload.containsKey('iss') || payload['iss'] != issuer) {
-    throw JWTInvalidError('invalid issuer');
+    throw JWTException('Invalid issuer');
   }
   return JWT(
     payload,
@@ -159,60 +158,44 @@ Future<JWT> verifyFirebaseToken(String token) async {
 Middleware handleAuth() {
   return (Handler innerHandler) {
     return (Request request) async {
-      final authHeader = request.headers['authorization'];
-      JWT? jwt;
+      final authHeader = request.headers[HttpHeaders.authorizationHeader];
 
       try {
         if (authHeader != null && authHeader.startsWith('Bearer ')) {
           final token = authHeader.substring(7);
-          // jwt = JWT.verify(token, SecretKey(secret));
-          jwt = await verifyFirebaseToken(token);
+          final jwt = await verifyFirebaseToken(token);
+
+          final updatedRequest = request.change(
+            context: {'authDetails': jwt},
+          );
+          return await innerHandler(updatedRequest);
+        } else {
+          throw JWTException('Invalid token');
         }
-      } catch (e, stackTrace) {
-        log(e.toString(), error: e, stackTrace: stackTrace);
+      } on JWTException catch (e, stackTrace) {
+        log(e.toString(), stackTrace: stackTrace);
         return Response(
           HttpStatus.unauthorized,
           headers: headers,
           body: jsonEncode(
             ResponseWrapper(
               statusCode: HttpStatus.unauthorized,
-              message: 'Invalid token',
+              message: e.message,
+            ).toJson(),
+          ),
+        );
+      } catch (e, stackTrace) {
+        log(e.toString(), stackTrace: stackTrace);
+        return Response.internalServerError(
+          headers: headers,
+          body: jsonEncode(
+            ResponseWrapper(
+              statusCode: HttpStatus.internalServerError,
+              message: e.toString(),
             ).toJson(),
           ),
         );
       }
-
-      final updatedRequest = request.change(
-        context: {
-          'authDetails': jwt,
-        },
-      );
-      return await innerHandler(updatedRequest);
     };
   };
 }
-
-Middleware checkAuthorisation() {
-  return createMiddleware(
-    requestHandler: (Request request) {
-      if (request.context['authDetails'] == null) {
-        return Response(
-          HttpStatus.unauthorized,
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              statusCode: HttpStatus.unauthorized,
-              message: 'Not authorised to perform this action',
-            ).toJson(),
-          ),
-        );
-      }
-      return null;
-    },
-  );
-}
-
-Handler fallback(String indexPath) => (Request request) {
-      final indexFile = File(indexPath).readAsStringSync();
-      return Response.ok(indexFile, headers: {'content-type': 'text/html'});
-    };

@@ -2,7 +2,6 @@
 // import 'package:uuid/uuid.dart';
 
 // import 'token_pair.dart';
-// import 'utils.dart';
 
 // class TokenService {
 //   TokenService(this.db, this.secret);
@@ -27,7 +26,7 @@
 //     final tokenId = const Uuid().v4();
 //     final token = generateJwt(
 //       subject: userId,
-//       issuer: 'http://localhostt',
+//       issuer: 'http://localhost',
 //       expiry: tokenExpiry,
 //       jwtId: tokenId,
 //       secret: secret,
@@ -36,7 +35,7 @@
 //     const refreshTokenExpiry = Duration(days: 7);
 //     final refreshToken = generateJwt(
 //       subject: userId,
-//       issuer: 'http://localhostv',
+//       issuer: 'http://localhost',
 //       expiry: refreshTokenExpiry,
 //       jwtId: tokenId,
 //       secret: secret,
@@ -50,19 +49,6 @@
 //       refreshToken: refreshToken,
 //       refreshTokenExpiresIn: DateTime.now().add(refreshTokenExpiry),
 //     );
-//   }
-
-//   String base64Padded(String value) {
-//     final lenght = value.length;
-
-//     switch (lenght % 4) {
-//       case 2:
-//         return value.padRight(lenght + 2, '=');
-//       case 3:
-//         return value.padRight(lenght + 1, '=');
-//       default:
-//         return value;
-//     }
 //   }
 
 //   Future<void> addRefreshToken(String id, String token, Duration expiry) async {

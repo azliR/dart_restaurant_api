@@ -6,39 +6,39 @@ import 'firebase.dart';
 @immutable
 class TokenPayload extends Equatable {
   const TokenPayload({
-    this.iss,
-    this.aud,
+    this.issuer,
+    this.audience,
     this.authTime,
     this.userId,
-    this.sub,
-    this.iat,
-    this.exp,
+    this.subject,
+    this.issuedAt,
+    this.expire,
     this.phoneNumber,
     this.email,
     this.emailVerified,
     this.firebase,
   });
 
-  final String? iss;
-  final String? aud;
+  final String? issuer;
+  final String? audience;
   final int? authTime;
   final String? userId;
-  final String? sub;
-  final int? iat;
-  final int? exp;
+  final String? subject;
+  final int? issuedAt;
+  final int? expire;
   final String? phoneNumber;
   final String? email;
   final bool? emailVerified;
   final Firebase? firebase;
 
   factory TokenPayload.fromJson(Map<String, dynamic> json) => TokenPayload(
-        iss: json['iss'] as String?,
-        aud: json['aud'] as String?,
+        issuer: json['iss'] as String?,
+        audience: json['aud'] as String?,
         authTime: json['auth_time'] as int?,
         userId: json['user_id'] as String?,
-        sub: json['sub'] as String?,
-        iat: json['iat'] as int?,
-        exp: json['exp'] as int?,
+        subject: json['sub'] as String?,
+        issuedAt: json['iat'] as int?,
+        expire: json['exp'] as int?,
         phoneNumber: json['phone_number'] as String?,
         email: json['email'] as String?,
         emailVerified: json['email_verified'] as bool?,
@@ -48,13 +48,13 @@ class TokenPayload extends Equatable {
       );
 
   Map<String, dynamic> toJson() => {
-        'iss': iss,
-        'aud': aud,
+        'iss': issuer,
+        'aud': audience,
         'auth_time': authTime,
         'user_id': userId,
-        'sub': sub,
-        'iat': iat,
-        'exp': exp,
+        'sub': subject,
+        'iat': issuedAt,
+        'exp': expire,
         'phone_number': phoneNumber,
         'email': email,
         'email_verified': emailVerified,
@@ -64,13 +64,13 @@ class TokenPayload extends Equatable {
   @override
   List<Object?> get props {
     return [
-      iss,
-      aud,
+      issuer,
+      audience,
       authTime,
       userId,
-      sub,
-      iat,
-      exp,
+      subject,
+      issuedAt,
+      expire,
       phoneNumber,
       email,
       emailVerified,

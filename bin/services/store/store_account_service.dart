@@ -12,7 +12,6 @@ import '../../common/response_wrapper.dart';
 import '../../db/connection.dart';
 import '../../db/utils.dart';
 import '../../models/auth/store_admin.dart';
-import '../../models/enums/enums.dart';
 import '../../models/token_payload/token_payload.dart';
 
 class StoreAccountService {
@@ -25,87 +24,6 @@ class StoreAccountService {
   final FirebaseAuth _firebaseAuth;
 
   Router get router => Router()..post('/auth', _loginStoreHandler);
-  // ..post('/refreshtoken', _refreshTokenHandler);
-
-  Future<Response> _registerStoreHandler(Request request) async {
-    final payload = await request.readAsString();
-    final userInfo = json.decode(payload) as Map<String, dynamic>;
-    final fullName = userInfo['full_name'] as String?;
-    final email = userInfo['email'] as String?;
-    final password = userInfo['password'] as String?;
-
-    // Ensure email and password fields are present
-    if (email == null || email.isEmpty) {
-      return Response(
-        HttpStatus.badRequest,
-        body: ResponseWrapper(
-          statusCode: HttpStatus.badRequest,
-          message: '{email} is required',
-        ).toJson(),
-      );
-    }
-
-    StoreAdmin? storeAdmin;
-    final transaction = await _connection.db.transaction((connection) async {
-      final storeAccountResult = await _connection.db.query(
-        _createStoreAccountQuery,
-        substitutionValues: {
-          'full_name': fullName,
-          'role': StoreRole.admin.name,
-          'language_code': 'en',
-        },
-      );
-
-      if (storeAccountResult.isEmpty) {
-        connection.cancelTransaction(
-          reason: 'Failed to create store account',
-        );
-      }
-
-      storeAdmin = StoreAdmin.fromJson(storeAccountResult.first.toColumnMap());
-
-      final storeAdminResult = await _connection.db.query(
-        _createStoreAdminQuery,
-        substitutionValues: {
-          'store_account_id': storeAdmin?.id,
-          'email': email,
-        },
-      );
-
-      if (storeAdminResult.isEmpty) {
-        connection.cancelTransaction(
-          reason: 'Failed to create store admin',
-        );
-      }
-
-      storeAdmin = storeAdmin?.copyWith(
-        email: email,
-      );
-    });
-
-    if (transaction is PostgreSQLRollback) {
-      return Response(
-        HttpStatus.internalServerError,
-        headers: headers,
-        body: jsonEncode(
-          ResponseWrapper(
-            message: transaction.reason,
-            statusCode: HttpStatus.internalServerError,
-          ).toJson(),
-        ),
-      );
-    } else {
-      return Response.ok(
-        jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.ok,
-            data: storeAdmin,
-          ).toJson(),
-        ),
-        headers: headers,
-      );
-    }
-  }
 
   Future<Response> _loginStoreHandler(Request request) async {
     try {
@@ -127,12 +45,13 @@ class StoreAccountService {
       }
 
       final jwt = await verifyFirebaseToken(token);
+      final tokenPair =
+          TokenPayload.fromJson(jwt.payload as Map<String, dynamic>);
 
       final postgresResult = await _connection.db.query(
         _getStoreAdminQuery,
         substitutionValues: {
-          'email':
-              TokenPayload.fromJson(jwt.payload as Map<String, dynamic>).email,
+          'email': tokenPair.email,
         },
       );
       if (postgresResult.isEmpty) {
@@ -149,17 +68,12 @@ class StoreAccountService {
 
       final storeAdmin = postgresResult.first;
 
-      // final tokenPair = await _tokenService.createTokenPair(token);
-
       return Response.ok(
         headers: headers,
         jsonEncode(
           ResponseWrapper(
             statusCode: HttpStatus.ok,
-            data: {
-              'user': StoreAdmin.fromJson(storeAdmin.toColumnMap()),
-              // 'token': tokenPair.toJson(),
-            },
+            data: StoreAdmin.fromJson(storeAdmin.toColumnMap()),
           ).toJson(),
         ),
       );
