@@ -28,8 +28,7 @@ class TemplateService {
 
   Future<Response> _placeOrderHandler(Request request) async {
     try {
-      final authToken = request.headers[HttpHeaders.authorizationHeader]
-          ?.replaceAll('Bearer ', '');
+      final authToken = '1c7b3156-986b-487b-8d6c-2db03806ca30';
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final storeId = body['store_id'] as String?;
@@ -391,6 +390,7 @@ class TemplateService {
             }),
           ),
         );
+        print(await a.readAsString());
       }
       return Response.ok(
         jsonEncode(

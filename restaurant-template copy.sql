@@ -20,7 +20,7 @@ CREATE TYPE store_role_enum AS ENUM ('admin', 'staff');
 
 CREATE TABLE coupons (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
-    inserted_by UUID NOT NULL,
+    inserted_by VARCHAR(128) NOT NULL,
     coupon_code VARCHAR(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
     description VARCHAR(255),
@@ -122,7 +122,7 @@ CREATE TABLE orders (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
     customer_id VARCHAR(128) NOT NULL,
     store_id UUID NOT NULL,
-    store_account_id UUID,
+    store_account_id VARCHAR(128),
     table_id UUID,
     coupon_id UUID,
     buyer VARCHAR(64) NOT NULL,
@@ -191,7 +191,7 @@ CREATE TABLE reservation_tables (
 
 CREATE TABLE stores (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
-    store_admin_id UUID NOT NULL,
+    store_admin_id VARCHAR(128) NOT NULL,
     name VARCHAR(64) NOT NULL,
     description VARCHAR(255),
     image TEXT,
@@ -213,7 +213,7 @@ CREATE TABLE store_pickup_types (
 );
 
 CREATE TABLE store_accounts (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id VARCHAR(128) NOT NULL,
     full_name VARCHAR(64) NOT NULL,
     role store_role_enum NOT NULL,
     language_code VARCHAR(2) NOT NULL,
@@ -222,13 +222,13 @@ CREATE TABLE store_accounts (
 );
 
 CREATE TABLE store_admins (
-    store_account_id UUID NOT NULL,
+    store_account_id VARCHAR(128) NOT NULL,
     email VARCHAR(255) NOT NULL,
     CONSTRAINT pk_store_admins PRIMARY KEY (store_account_id)
 );
 
 CREATE TABLE store_staffs (
-    store_account_id UUID NOT NULL,
+    store_account_id VARCHAR(128) NOT NULL,
     store_id UUID NOT NULL,
     username VARCHAR(36) NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -338,7 +338,7 @@ ADD CONSTRAINT fk_store_staffs_on_store FOREIGN KEY (store_id) REFERENCES stores
 -- insert store_accounts
 INSERT INTO public.store_accounts (id, full_name, "role", language_code, created_at)
 VALUES(
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        'firebase:ZYaSOubGEkZ1eUw5i4lmoz27R4u2',
         'Rizal Hadiyansah',
         'admin'::public."store_role_enum",
         'en',
@@ -366,7 +366,7 @@ VALUES(
 -- insert store_admins
 INSERT INTO public.store_admins (store_account_id, email)
 VALUES(
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        'firebase:ZYaSOubGEkZ1eUw5i4lmoz27R4u2',
         'rizalhadiyansah@gmail.com'
     );
 
@@ -466,7 +466,7 @@ INSERT INTO public.stores (
     )
 VALUES(
         '93ab578c-46fa-42f6-b61f-ef13fe13045d',
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        'firebase:ZYaSOubGEkZ1eUw5i4lmoz27R4u2',
         'Alpha Store',
         'Alpha Store',
         'https://seeklogo.com/images/M/mcdonald-s-logo-255A7B5646-seeklogo.com.png',
@@ -489,7 +489,7 @@ INSERT INTO public.store_staffs (
         is_locked
     )
 VALUES(
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        'firebase:ZYaSOubGEkZ1eUw5i4lmoz27R4u2',
         '93ab578c-46fa-42f6-b61f-ef13fe13045d',
         'a_lpha',
         '$2a$12$q3mLZR3i86cSR90DSf1X6u1lXfGAy4KILvbxR3fQjDSJVTkSpVEyC',
@@ -1185,7 +1185,7 @@ INSERT INTO public.coupons (
     )
 VALUES(
         '19fb0734-01a4-40a1-a95e-ff6d18fc2af6',
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        'firebase:ZYaSOubGEkZ1eUw5i4lmoz27R4u2',
         'BREAK',
         'Coupon New Customer',
         'This coupon is for new customer from store Alpha Store',
@@ -1247,7 +1247,7 @@ VALUES(
         'd0dc6416-d1cb-4e4c-b5d0-3af7b176fb4c',
         '1c7b3156-986b-487b-8d6c-2db03806ca30',
         '93ab578c-46fa-42f6-b61f-ef13fe13045d',
-        'a9a54fca-ec42-40e5-ad1e-f1aaa3b0322f',
+        'firebase:ZYaSOubGEkZ1eUw5i4lmoz27R4u2',
         '947898b3-be6c-4a70-86b8-2286154af42b',
         '19fb0734-01a4-40a1-a95e-ff6d18fc2af6',
         'Rizal Hadiyansah',

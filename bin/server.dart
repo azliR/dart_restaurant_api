@@ -59,7 +59,7 @@ void main(List<String> args) async {
   final orderService = OrderService(connection);
   final templateService = TemplateService(connection);
 
-  final storeAccountService = StoreAccountService(connection, firebaseAuth);
+  final storeAccountService = StoreAccountService(connection);
   final storeOrderService = StoreOrderService(connection);
   final storeReportService = StoreReportService(connection);
 
@@ -90,11 +90,11 @@ void main(List<String> args) async {
     ..mount('/api/v1/user/item/sub_category', itemSubCategory.router)
     ..mount('/api/v1/user/store', storeService.router)
     ..mount('/api/v1/user/template', templateService.router)
+    ..mount('/api/v1/store/trend', storeReportService.router)
+    ..mount('/api/v1/store/order', storeOrderService.router)
     ..mount('/api/v1/user', customerRoute)
     ..mount('/api/v1/user/order', orderRoute)
-    ..mount('/api/v1/store', storeAccountRoute)
-    ..mount('/api/v1/store/order', storeOrderRoute)
-    ..mount('/api/v1/store/trend', storeReportService.router);
+    ..mount('/api/v1/store', storeAccountRoute);
 
   // Use any available host or container IP (usually `0.0.0.0`).
   final ip = InternetAddress.anyIPv4;

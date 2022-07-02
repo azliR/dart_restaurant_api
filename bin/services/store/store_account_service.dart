@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:firebase_dart/auth.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -10,73 +10,97 @@ import 'package:shelf_router/shelf_router.dart';
 import '../../common/constants.dart';
 import '../../common/response_wrapper.dart';
 import '../../db/connection.dart';
-import '../../db/utils.dart';
 import '../../models/auth/store_admin.dart';
+import '../../models/enums/enums.dart';
 import '../../models/token_payload/token_payload.dart';
 
 class StoreAccountService {
-  StoreAccountService(
-    this._connection,
-    this._firebaseAuth,
-  );
+  StoreAccountService(this._connection);
 
   final DatabaseConnection _connection;
-  final FirebaseAuth _firebaseAuth;
 
   Router get router => Router()..post('/auth', _loginStoreHandler);
 
   Future<Response> _loginStoreHandler(Request request) async {
     try {
-      final body =
-          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final token = body['token'] as String?;
+      final auth = request.context['authDetails']! as JWT;
+      final tokenPayload =
+          TokenPayload.fromJson(auth.payload as Map<String, dynamic>);
 
-      if (token == null) {
-        return Response(
-          HttpStatus.unauthorized,
-          headers: headers,
-          body: jsonEncode(
-            ResponseWrapper(
-              message: 'Unauthorized',
-              statusCode: HttpStatus.unauthorized,
-            ).toJson(),
-          ),
-        );
-      }
-
-      final jwt = await verifyFirebaseToken(token);
-      final tokenPair =
-          TokenPayload.fromJson(jwt.payload as Map<String, dynamic>);
-
-      final postgresResult = await _connection.db.query(
+      final loginResult = await _connection.db.query(
         _getStoreAdminQuery,
         substitutionValues: {
-          'email': tokenPair.email,
+          'id': 'firebase:${tokenPayload.userId}',
         },
       );
-      if (postgresResult.isEmpty) {
-        return Response.internalServerError(
+      if (loginResult.isEmpty) {
+        StoreAdmin? storeAdmin;
+        final transaction =
+            await _connection.db.transaction((connection) async {
+          final storeAccountResult = await connection.query(
+            _createStoreAccountQuery,
+            substitutionValues: {
+              'id': 'firebase:${tokenPayload.userId}',
+              'full_name': '',
+              'role': StoreRole.admin.name,
+              'language_code': 'en',
+            },
+          );
+          if (storeAccountResult.isEmpty) {
+            return connection.cancelTransaction(
+              reason: 'Failed to create store account',
+            );
+          }
+          final storeAdminResult = await connection.query(
+            _createStoreAdminQuery,
+            substitutionValues: {
+              'store_account_id': 'firebase:${tokenPayload.userId}',
+              'email': tokenPayload.email,
+            },
+          );
+          if (storeAdminResult.isEmpty) {
+            return connection.cancelTransaction(
+              reason: 'Failed to create store admin',
+            );
+          }
+          final storeAdminJson = storeAccountResult.first.toColumnMap();
+          final email = storeAdminResult.first.toColumnMap()['email'] as String;
+          storeAdmin =
+              StoreAdmin.fromJson(storeAdminJson).copyWith(email: email);
+        });
+
+        if (transaction is PostgreSQLRollback) {
+          return Response.internalServerError(
+            headers: headers,
+            body: jsonEncode(
+              ResponseWrapper(
+                statusCode: HttpStatus.internalServerError,
+                message: transaction.reason,
+              ).toJson(),
+            ),
+          );
+        } else {
+          return Response.ok(
+            headers: headers,
+            jsonEncode(
+              ResponseWrapper(
+                statusCode: HttpStatus.ok,
+                data: storeAdmin,
+              ).toJson(),
+            ),
+          );
+        }
+      } else {
+        return Response.ok(
           headers: headers,
-          body: jsonEncode(
+          jsonEncode(
             ResponseWrapper(
-              statusCode: HttpStatus.internalServerError,
-              message: 'Store admin not found',
+              statusCode: HttpStatus.ok,
+              data: StoreAdmin.fromJson(loginResult.first.toColumnMap()),
             ).toJson(),
           ),
         );
       }
-
-      final storeAdmin = postgresResult.first;
-
-      return Response.ok(
-        headers: headers,
-        jsonEncode(
-          ResponseWrapper(
-            statusCode: HttpStatus.ok,
-            data: StoreAdmin.fromJson(storeAdmin.toColumnMap()),
-          ).toJson(),
-        ),
-      );
     } on PostgreSQLException catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);
       return Response.internalServerError(
@@ -175,15 +199,17 @@ class StoreAccountService {
     SELECT *
     FROM store_admins
     LEFT JOIN store_accounts ON store_accounts.id = store_admins.store_account_id
-    WHERE email = @email
+    WHERE id = @id
     ''';
 
   static const _createStoreAccountQuery = '''
     INSERT INTO store_accounts (
+      id,
       full_name,
       role,
       language_code
     ) VALUES (
+      @id,
       @full_name,
       @role,
       @language_code
@@ -191,7 +217,7 @@ class StoreAccountService {
   ''';
 
   static const _createStoreAdminQuery = '''
-    INSERT INTO store_accounts (
+    INSERT INTO store_admins (
       store_account_id,
       email
     ) VALUES (
