@@ -1,7 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:firebase_dart/firebase_dart.dart' hide AuthProvider;
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -34,21 +33,21 @@ void main(List<String> args) async {
   final connection = DatabaseConnection();
   await connection.db.open();
 
-  FirebaseDart.setup();
+  // FirebaseDart.setup();
 
-  final app = await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyDAPN8WUX40-3ZWhf0QVvcneivvyLiDuS4",
-      authDomain: "restaurant-70076.firebaseapp.com",
-      projectId: "restaurant-70076",
-      storageBucket: "restaurant-70076.appspot.com",
-      messagingSenderId: "604627191517",
-      appId: "1:604627191517:web:b3c4fcbbde7efb64307d34",
-      measurementId: "G-YGCRL9Y53X",
-    ),
-  );
+  // final app = await Firebase.initializeApp(
+  //   options: const FirebaseOptions(
+  //     apiKey: "AIzaSyDAPN8WUX40-3ZWhf0QVvcneivvyLiDuS4",
+  //     authDomain: "restaurant-70076.firebaseapp.com",
+  //     projectId: "restaurant-70076",
+  //     storageBucket: "restaurant-70076.appspot.com",
+  //     messagingSenderId: "604627191517",
+  //     appId: "1:604627191517:web:b3c4fcbbde7efb64307d34",
+  //     measurementId: "G-YGCRL9Y53X",
+  //   ),
+  // );
 
-  final firebaseAuth = FirebaseAuth.instanceFor(app: app);
+  // final firebaseAuth = FirebaseAuth.instanceFor(app: app);
 
   final homeService = HomeService(connection);
   final itemService = ItemService(connection);

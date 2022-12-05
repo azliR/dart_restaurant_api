@@ -8,7 +8,7 @@
             "name": "dart_restaurant_api",
             "request": "launch",
             "type": "dart",
-            "program": "bin/server.dart"
+            "program": "bin/server.dart",
         }
     ]
 }
