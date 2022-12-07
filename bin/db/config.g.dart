@@ -3,13 +3,14 @@
 part of 'config.dart';
 
 // **************************************************************************
-// EnvifyGenerator
+// EnviedGenerator
 // **************************************************************************
 
 class _Env {
-  static const String secretKey = '25BBD370-975D-4D45-8F5A-B3FA92155CCA';
-  static const String redisHost = 'localhost';
-  static const String redisPassword = 'root';
-  static const int redisPort = 6379;
-  static const int serverPort = 8080;
+  static const String databaseHost =
+      'brhqpdzkq7x3hn04expj-postgresql.services.clever-cloud.com';
+  static const int databasePort = 5432;
+  static const String databaseName = 'brhqpdzkq7x3hn04expj';
+  static const String databaseUser = 'u7xzugrg0u1pn0cjohh0';
+  static const String databasePassword = 'qXHurWz43fFNyJ2NbLh4';
 }

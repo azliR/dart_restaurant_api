@@ -1,12 +1,17 @@
-import 'package:envify/envify.dart';
+import 'package:envied/envied.dart';
 
 part 'config.g.dart';
 
-@Envify()
+@Envied()
 abstract class Env {
-  static const String secretKey = _Env.secretKey;
-  static const String redisHost = _Env.redisHost;
-  static const String redisPassword = _Env.redisPassword;
-  static const int redisPort = _Env.redisPort;
-  static const int serverPort = _Env.serverPort;
+  @EnviedField(varName: 'DATABASE_HOST')
+  static const String databaseHost = _Env.databaseHost;
+  @EnviedField(varName: 'DATABASE_PORT')
+  static const int databasePort = _Env.databasePort;
+  @EnviedField(varName: 'DATABASE_NAME')
+  static const String databaseName = _Env.databaseName;
+  @EnviedField(varName: 'DATABASE_USER')
+  static const String databaseUser = _Env.databaseUser;
+  @EnviedField(varName: 'DATABASE_PASSWORD')
+  static const String databasePassword = _Env.databasePassword;
 }
