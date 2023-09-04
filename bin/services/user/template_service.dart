@@ -32,8 +32,8 @@ class TemplateService {
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final storeId = body['store_id'] as String?;
-      final tableId = body['table_id'] as String?;
-      final couponCode = body['coupon_code'] as String?;
+      // final tableId = body['table_id'] as String?;
+      // final couponCode = body['coupon_code'] as String?;
       final orderType = body['order_type'] as String?;
       final pickupType = body['pickup_type'] as String?;
       final scheduleAt = body['schedule_at'] as int?;
@@ -341,7 +341,7 @@ class TemplateService {
     try {
       for (var i = 0; i < 1000; i++) {
         final isSchedule = faker.randomGenerator.boolean();
-        final a = await _placeOrderHandler(
+        await _placeOrderHandler(
           Request(
             request.method,
             request.requestedUri,
@@ -386,11 +386,10 @@ class TemplateService {
                     'quantity': Random().nextInt(10) + 1,
                   },
                 ),
-              ).toList()
+              ).toList(),
             }),
           ),
         );
-        print(await a.readAsString());
       }
       return Response.ok(
         jsonEncode(

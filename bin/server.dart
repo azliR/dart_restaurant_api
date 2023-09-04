@@ -20,34 +20,8 @@ import 'services/user/store_service.dart';
 import 'services/user/template_service.dart';
 
 void main(List<String> args) async {
-  // const secret = Env.secretKey;
-  // const redisHost = Env.redisHost;
-  // const redisPassword = Env.redisPassword;
-  // const redisPort = Env.redisPort;
-
-  // final redisConnection = RedisConnection();
-
-  // final tokenService = TokenService(redisConnection, secret);
-  // tokenService.start(host: redisHost, password: redisPassword, port: redisPort);
-
   final connection = DatabaseConnection();
   await connection.db.open();
-
-  // FirebaseDart.setup();
-
-  // final app = await Firebase.initializeApp(
-  //   options: const FirebaseOptions(
-  //     apiKey: "AIzaSyDAPN8WUX40-3ZWhf0QVvcneivvyLiDuS4",
-  //     authDomain: "restaurant-70076.firebaseapp.com",
-  //     projectId: "restaurant-70076",
-  //     storageBucket: "restaurant-70076.appspot.com",
-  //     messagingSenderId: "604627191517",
-  //     appId: "1:604627191517:web:b3c4fcbbde7efb64307d34",
-  //     measurementId: "G-YGCRL9Y53X",
-  //   ),
-  // );
-
-  // final firebaseAuth = FirebaseAuth.instanceFor(app: app);
 
   final homeService = HomeService(connection);
   final itemService = ItemService(connection);
@@ -64,43 +38,43 @@ void main(List<String> args) async {
 
   final customerRoute = const Pipeline()
       .addMiddleware(handleAuth())
-      .addHandler(customerService.router);
+      .addHandler(customerService.router.call);
 
   final orderRoute = const Pipeline()
       .addMiddleware(handleAuth())
-      .addHandler(orderService.router);
+      .addHandler(orderService.router.call);
 
   final storeAccountRoute = const Pipeline()
       .addMiddleware(handleAuth())
-      .addHandler(storeAccountService.router);
+      .addHandler(storeAccountService.router.call);
 
-  final storeOrderRoute = const Pipeline()
-      .addMiddleware(handleAuth())
-      .addHandler(storeOrderService.router);
+  // final storeOrderRoute = const Pipeline()
+  //     .addMiddleware(handleAuth())
+  //     .addHandler(storeOrderService.router.call);
 
-  final storeReportRoute = const Pipeline()
-      .addMiddleware(handleAuth())
-      .addHandler(storeReportService.router);
+  // final storeReportRoute = const Pipeline()
+  //     .addMiddleware(handleAuth())
+  //     .addHandler(storeReportService.router.call);
 
   final router = Router()
-    ..mount('/api/v1/user/home', homeService.router)
-    ..mount('/api/v1/user/item', itemService.router)
-    ..mount('/api/v1/user/item/category', itemCategory.router)
-    ..mount('/api/v1/user/item/sub_category', itemSubCategory.router)
-    ..mount('/api/v1/user/store', storeService.router)
-    ..mount('/api/v1/user/template', templateService.router)
-    ..mount('/api/v1/store/trend', storeReportService.router)
-    ..mount('/api/v1/store/order', storeOrderService.router)
+    ..mount('/api/v1/user/home', homeService.router.call)
+    ..mount('/api/v1/user/item', itemService.router.call)
+    ..mount('/api/v1/user/item/category', itemCategory.router.call)
+    ..mount('/api/v1/user/item/sub_category', itemSubCategory.router.call)
+    ..mount('/api/v1/user/store', storeService.router.call)
+    ..mount('/api/v1/user/template', templateService.router.call)
+    ..mount('/api/v1/store/trend', storeReportService.router.call)
+    ..mount('/api/v1/store/order', storeOrderService.router.call)
     ..mount('/api/v1/user', customerRoute)
     ..mount('/api/v1/user/order', orderRoute)
     ..mount('/api/v1/store', storeAccountRoute);
 
   // Use any available host or container IP (usually `0.0.0.0`).
-  final ip = InternetAddress.anyIPv4;
+  // final ip = InternetAddress.anyIPv4;
 
   // For running in containers, we respect the PORT environment variable.
   final port = int.parse(Platform.environment['PORT'] ?? '8080');
 
-  final server = await serve(router, '0.0.0.0', port);
+  final server = await serve(router.call, '0.0.0.0', port);
   log('Server listening on port ${server.port}');
 }

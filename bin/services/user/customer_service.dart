@@ -26,8 +26,7 @@ class CustomerService {
   Future<Response> _getCustomerByIdHandler(Request request) async {
     try {
       final auth = request.context['authDetails']! as JWT;
-      final tokenPayload =
-          TokenPayload.fromJson(auth.payload as Map<String, dynamic>);
+      TokenPayload.fromJson(auth.payload as Map<String, dynamic>);
 
       final postgresResult = await _connection.db.query(
         _getCustomerByIdQuery,

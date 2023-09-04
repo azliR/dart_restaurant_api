@@ -228,8 +228,8 @@ class OrderService {
       final body =
           jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final storeId = body['store_id'] as String?;
-      final tableId = body['table_id'] as String?;
-      final couponCode = body['coupon_code'] as String?;
+      // final tableId = body['table_id'] as String?;
+      // final couponCode = body['coupon_code'] as String?;
       final orderType = body['order_type'] as String?;
       final pickupType = body['pickup_type'] as String?;
       final scheduleAt = body['schedule_at'] as int?;
@@ -321,7 +321,7 @@ class OrderService {
         final customerResult = await connection.query(
           'SELECT id, full_name FROM customers WHERE id = @customer_id',
           substitutionValues: {
-            'customer_id': 'firebase:${tokenPayload.userId}'
+            'customer_id': 'firebase:${tokenPayload.userId}',
           },
         );
         late final Customer customer;

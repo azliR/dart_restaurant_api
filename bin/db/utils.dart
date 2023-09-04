@@ -8,7 +8,6 @@ import 'package:jose/jose.dart';
 import 'package:shelf/shelf.dart';
 
 import '../common/constants.dart';
-import '../common/exceptions.dart';
 import '../common/response_wrapper.dart';
 
 // Middleware handleCors() {
